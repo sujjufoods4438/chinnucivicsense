@@ -1,0 +1,240 @@
+  const IssueReport = require('../models/IssueReport');
+  const fs = require('fs');
+  const path = require('path');
+  const webpush = require('web-push');
+
+  // Function to send push notification (placeholder - needs subscription storage)
+  const sendPushNotification = (title, body) => {
+    // In a real app, retrieve all admin subscriptions from DB
+    // For demo, we'll skip actual sending since no subscriptions stored
+    console.log('Push notification:', title, body);
+    // Example: webpush.sendNotification(subscription, payload);
+  };
+
+  // Create issue report
+  exports.createIssueReport = async (req, res) => {
+    try {
+      const { description, location, image, latitude, longitude } = req.body;
+      let { issueType } = req.body;
+
+      if (!description || !location) {
+        return res.status(400).json({ success: false, message: 'Please provide description and location' });
+      }
+
+      // --- MOCK AI DETECTION ---
+      if (!issueType || issueType === 'undefined' || issueType === '') {
+        const types = ['pothole', 'garbage', 'water_leak', 'damaged_road'];
+        issueType = types[Math.floor(Math.random() * types.length)];
+      }
+
+      // Auto-detect priority
+      const priorities = ['low', 'medium', 'high'];
+      const autoPriority = priorities[Math.floor(Math.random() * priorities.length)];
+
+      let locationObj = location;
+      if (location && typeof location === 'string') {
+        try { locationObj = JSON.parse(location); } catch (e) { locationObj = {}; }
+      }
+
+      if (latitude) locationObj.latitude = parseFloat(latitude);
+      if (longitude) locationObj.longitude = parseFloat(longitude);
+
+      // Ensure all location requirements have some string if empty
+      ['streetName', 'area', 'city', 'district', 'state', 'municipality'].forEach(field => {
+        if (!locationObj[field]) locationObj[field] = 'Unknown';
+      });
+
+      // Handle image sources in order of precedence:
+      // 1. req.file (multipart upload via multer)
+      // 2. image field (could be data URL string or URL)
+      let imageField = null;
+      if (req.file) {
+        // multer saved file to uploads folder (dest). Build URL to serve it.
+        const filename = req.file.filename;
+        const host = req.get('host');
+        const protocol = req.protocol;
+        imageField = `${protocol}://${host}/uploads/${filename}`;
+      } else if (image && typeof image === 'string') {
+        if (image.startsWith('data:')) {
+          // decode data URL and save file
+          const matches = image.match(/^data:(.+);base64,(.+)$/);
+          if (matches) {
+            const mime = matches[1];
+            const ext = mime.split('/')[1] || 'jpg';
+            const base64Data = matches[2];
+            const buffer = Buffer.from(base64Data, 'base64');
+            const uploadsDir = path.join(__dirname, '..', 'uploads');
+            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+            const filename = `issue_${Date.now()}.${ext}`;
+            const filePath = path.join(uploadsDir, filename);
+            fs.writeFileSync(filePath, buffer);
+            const host = req.get('host');
+            const protocol = req.protocol;
+            imageField = `${protocol}://${host}/uploads/${filename}`;
+          }
+        } else {
+          imageField = image;
+        }
+      }
+
+      const issueReport = new IssueReport({
+        reportedBy: req.user.id,
+        issueType,
+        priority: autoPriority,
+        description,
+        location: locationObj,
+        image: imageField
+      });
+
+      await issueReport.save();
+
+      if (req.io) {
+        req.io.emit('new_issue', issueReport);
+      }
+
+      // Send push notification to admins
+      sendPushNotification('New Issue Reported', `New ${issueType} issue reported in ${locationObj.city || 'Unknown'}`);
+
+      res.status(201).json({
+        success: true,
+        message: 'Issue reported successfully',
+        data: issueReport
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
+
+  // Get all issues (Admin)
+  exports.getAllIssues = async (req, res) => {
+    try {
+      const issues = await IssueReport.find()
+        .populate('reportedBy', 'name email phone')
+        .populate('assignedTo', 'name email')
+        .sort({ createdAt: -1 });
+
+      res.status(200).json({
+        success: true,
+        count: issues.length,
+        data: issues
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
+
+  // Get user's issues
+  exports.getUserIssues = async (req, res) => {
+    try {
+      const issues = await IssueReport.find({ reportedBy: req.user.id })
+        .sort({ createdAt: -1 });
+
+      res.status(200).json({
+        success: true,
+        count: issues.length,
+        data: issues
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
+
+  // Get issue by ID
+  exports.getIssueById = async (req, res) => {
+    try {
+      const issue = await IssueReport.findById(req.params.id)
+        .populate('reportedBy', 'name email phone')
+        .populate('assignedTo', 'name email');
+
+      if (!issue) {
+        return res.status(404).json({ success: false, message: 'Issue not found' });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: issue
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
+
+  // Update issue (Admin only - can change status and priority)
+  exports.updateIssue = async (req, res) => {
+    try {
+      const { status, priority, assignedTo, comments } = req.body;
+      const issue = await IssueReport.findById(req.params.id);
+
+      if (!issue) {
+        return res.status(404).json({ success: false, message: 'Issue not found' });
+      }
+
+      if (status) issue.status = status;
+      if (priority) issue.priority = priority;
+      if (assignedTo) issue.assignedTo = assignedTo;
+      if (comments) issue.comments = comments;
+      if (status === 'resolved') issue.resolutionDate = new Date();
+
+      issue.updatedAt = new Date();
+      await issue.save();
+
+      if (req.io) {
+        req.io.emit('issue_updated', issue);
+      }
+
+      // Send push notification for status updates
+      sendPushNotification('Issue Updated', `Issue ${issue._id} status changed to ${status}`);
+
+      res.status(200).json({
+        success: true,
+        message: 'Issue updated successfully',
+        data: issue
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
+
+  // Get issues statistics (Admin)
+  exports.getStatistics = async (req, res) => {
+    try {
+      const totalIssues = await IssueReport.countDocuments();
+      const resolvedIssues = await IssueReport.countDocuments({ status: 'resolved' });
+      const inProgressIssues = await IssueReport.countDocuments({ status: 'in_progress' });
+      const reportedIssues = await IssueReport.countDocuments({ status: 'reported' });
+      const rejectedIssues = await IssueReport.countDocuments({ status: 'rejected' });
+
+      const issuesByType = await IssueReport.aggregate([
+        {
+          $group: {
+            _id: '$issueType',
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const issuesByLocation = await IssueReport.aggregate([
+        {
+          $group: {
+            _id: '$location.city',
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          totalIssues,
+          resolvedIssues,
+          inProgressIssues,
+          reportedIssues,
+          rejectedIssues,
+          issuesByType,
+          issuesByLocation
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
