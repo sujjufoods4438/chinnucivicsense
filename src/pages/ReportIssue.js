@@ -23,6 +23,7 @@ L.Icon.Default.mergeOptions({
 
 function ReportIssue() {
   const { t } = useTranslation();
+  const [autoReporting, setAutoReporting] = useState(false);
   const [formData, setFormData] = useState({
     issueType: '',
     title: '',
