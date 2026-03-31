@@ -1,0 +1,62 @@
+{
+  "common": {
+    "language": "भाषा",
+    "english": "English",
+    "hindi": "हिंदी",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "submit": "जमा करें",
+    "loading": "लोड हो रहा है...",
+    "error": "त्रुटि",
+    "success": "सफल"
+  },
+  "reportIssue": {
+    "title": "नागरिक समस्या की रिपोर्ट करें",
+    "uploadImage": "छवि अपलोड करें",
+    "chooseImage": "छवि चुनें",
+    "useCamera": "कैमरा का उपयोग करें",
+    "voiceReport": "आवाज रिपोर्ट",
+    "startVoice": "बोलना शुरू करें",
+    "stopVoice": "बोलना बंद करें",
+    "voiceInputActive": "🎤 आवाज इनपुट सक्रिय है। अपनी समस्या का विवरण बताएं...",
+    "voiceProcessing": "आवाज इनपुट को प्रक्रिया कर रहे हैं...",
+    "emergencyAlert": "🚨 आपातकालीन अलर्ट",
+    "markAsEmergency": "आपातकालीन के रूप में चिह्नित करें",
+    "emergencyCritical": "गंभीर - तत्काल कार्रवाई आवश्यक",
+    "emergencyHigh": "उच्च प्राथमिकता - तत्काल",
+    "emergencyMedium": "मध्यम प्राथमिकता",
+    "issueType": "समस्या का प्रकार",
+    "description": "विवरण",
+    "location": "स्थान",
+    "getLocation": "मेरा स्थान प्राप्त करें",
+    "issueCivic": "नागरिक समस्या की छवि अनुरोधित",
+    "validationFailed": "छवि सत्यापन विफल"
+  },
+  "dashboard": {
+    "title": "नागरिक समस्याएं डैशबोर्ड",
+    "allIssues": "सभी समस्याएं",
+    "totalComplaints": "कुल शिकायतें",
+    "resolved": "हल हो गया",
+    "inProgress": "प्रगति में",
+    "pending": "लंबित",
+    "emergencyAlerts": "आपातकालीन अलर्ट",
+    "newEmergency": "नई आपातकालीन रिपोर्ट",
+    "alertReceived": "आपातकालीन अलर्ट प्राप्त हुआ!"
+  },
+  "voiceReport": {
+    "listen": "सुन रहे हैं...",
+    "speaking": "आप बोल रहे हैं...",
+    "recognized": "पहचानी गई पाठ:",
+    "error": "आवाज पहचान त्रुटि",
+    "notSupported": "आपके ब्राउज़र में आवाज इनपुट समर्थित नहीं है",
+    "permission": "माइक्रोफोन अनुमति अस्वीकृत"
+  },
+  "emergency": {
+    "systemAlert": "आपातकालीन अलर्ट प्रणाली सक्रिय",
+    "criticalIssue": "महत्वपूर्ण नागरिक समस्या का पता चला",
+    "autoNotify": "अधिकारियों और नागरिकों को सूचित किया जाएगा",
+    "priority": "प्राथमिकता स्तर",
+    "estimatedResponse": "अनुमानित प्रतिक्रिया समय",
+    "minutes": "मिनट"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "common": {
+    "language": "Language",
+    "english": "English",
+    "hindi": "Hindi",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "reportIssue": {
+    "title": "Report a Civic Issue",
+    "uploadImage": "Upload Image",
+    "chooseImage": "Choose Image",
+    "useCamera": "Use Camera",
+    "voiceReport": "Voice Report",
+    "startVoice": "Start Speaking",
+    "stopVoice": "Stop Speaking",
+    "voiceInputActive": "🎤 Voice input active. Speak your issue description...",
+    "voiceProcessing": "Processing voice input...",
+    "emergencyAlert": "🚨 EMERGENCY ALERT",
+    "markAsEmergency": "Mark as Emergency",
+    "emergencyCritical": "Critical - Immediate Action Required",
+    "emergencyHigh": "High Priority - Urgent",
+    "emergencyMedium": "Medium Priority",
+    "issueType": "Issue Type",
+    "description": "Description",
+    "location": "Location",
+    "getLocation": "Get My Location",
+    "issueCivic": "Civic issue image requested",
+    "validationFailed": "Image validation failed"
+  },
+  "dashboard": {
+    "title": "Civic Issues Dashboard",
+    "allIssues": "All Issues",
+    "totalComplaints": "Total Complaints",
+    "resolved": "Resolved",
+    "inProgress": "In Progress",
+    "pending": "Pending",
+    "emergencyAlerts": "Emergency Alerts",
+    "newEmergency": "New Emergency Report",
+    "alertReceived": "Emergency alert received!"
+  },
+  "voiceReport": {
+    "listen": "Listening...",
+    "speaking": "You are speaking...",
+    "recognized": "Recognized text:",
+    "error": "Voice recognition error",
+    "notSupported": "Voice input not supported in your browser",
+    "permission": "Microphone permission denied"
+  },
+  "emergency": {
+    "systemAlert": "Emergency Alert System Active",
+    "criticalIssue": "Critical Civic Issue Detected",
+    "autoNotify": "Authorities and citizens will be notified",
+    "priority": "Priority Level",
+    "estimatedResponse": "Est. Response Time",
+    "minutes": "minutes"
+  }
+}
