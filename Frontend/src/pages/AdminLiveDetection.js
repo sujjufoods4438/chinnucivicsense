@@ -9,7 +9,7 @@ import { API_BASE_URL } from '../config';
 import LanguageSelector from '../components/LanguageSelector';
 
 const AdminLiveDetection = () => {
-  const { t } = useTranslation(); // eslint-disable-line no-unused-vars
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -173,27 +173,29 @@ const AdminLiveDetection = () => {
     // Include all used functions and state in dependencies
   }, [updateVideoDevices, startLiveCamera, stopLiveCamera, currentDeviceId]);
 
-  const resolveNextDeviceId = () => {
-    if (videoDevices.length <= 1) {
-      return currentDeviceId;
-    }
 
-    const front = videoDevices.find(d => /front|user/i.test(d.label));
-    const back = videoDevices.find(d => /back|rear|environment/i.test(d.label));
 
-    if (facingMode === 'user' && back) {
-      return back.deviceId;
-    }
-    if (facingMode === 'environment' && front) {
-      return front.deviceId;
-    }
+  const switchCamera = useCallback(async () => {
+    const resolveNextDeviceId = () => {
+      if (videoDevices.length <= 1) {
+        return currentDeviceId;
+      }
 
-    const currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
-    const nextIndex = currentIndex === -1 || currentIndex === videoDevices.length - 1 ? 0 : currentIndex + 1;
-    return videoDevices[nextIndex].deviceId;
-  };
+      const front = videoDevices.find(d => /front|user/i.test(d.label));
+      const back = videoDevices.find(d => /back|rear|environment/i.test(d.label));
 
-  const switchCamera = async () => {
+      if (facingMode === 'user' && back) {
+        return back.deviceId;
+      }
+      if (facingMode === 'environment' && front) {
+        return front.deviceId;
+      }
+
+      const currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+      const nextIndex = currentIndex === -1 || currentIndex === videoDevices.length - 1 ? 0 : currentIndex + 1;
+      return videoDevices[nextIndex].deviceId;
+    };
+
     const currentEnumerated = await updateVideoDevices();
     if (currentEnumerated.length <= 1) {
       setError('Only one camera available; cannot switch.');
@@ -230,47 +232,9 @@ const AdminLiveDetection = () => {
       setError('Camera switch failed: ' + err.message);
       setIsLive(false);
     }
-  };
+  }, [updateVideoDevices, currentDeviceId, facingMode, stopLiveCamera, videoDevices]);
 
-  const captureFrame = async () => {
-    if (!videoRef.current) return;
-
-    setIsAnalyzing(true);
-    setError('');
-
-    try {
-      const video = videoRef.current;
-      const canvas = canvasRef.current || document.createElement('canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      setLastCapture(dataUrl);
-
-      const img = new Image();
-      img.onload = async () => {
-        try {
-          await analyzeFrame(img);
-        } catch (e) {
-          setError('Analysis failed: ' + e.message);
-          setIsAnalyzing(false);
-        }
-      };
-      img.onerror = () => {
-        setError('Failed to load captured frame data.');
-        setIsAnalyzing(false);
-      };
-      img.src = dataUrl;
-    } catch (err) {
-      setError('Failed to capture frame: ' + err.message);
-      setIsAnalyzing(false);
-    }
-  };
-
-  const analyzeFrame = async (imageElement) => {
+  const analyzeFrame = useCallback(async (imageElement) => {
     try {
       // Step 1: Check if image is real (not AI-generated or Google image)
       const detection = await detectAIImage(imageElement);
@@ -377,9 +341,47 @@ const AdminLiveDetection = () => {
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [model, t]);
 
-  const autoSubmitIssue = async () => {
+  const captureFrame = useCallback(async () => {
+    if (!videoRef.current) return;
+
+    setIsAnalyzing(true);
+    setError('');
+
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current || document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      setLastCapture(dataUrl);
+
+      const img = new Image();
+      img.onload = async () => {
+        try {
+          await analyzeFrame(img);
+        } catch (e) {
+          setError('Analysis failed: ' + e.message);
+          setIsAnalyzing(false);
+        }
+      };
+      img.onerror = () => {
+        setError('Failed to load captured frame data.');
+        setIsAnalyzing(false);
+      };
+      img.src = dataUrl;
+    } catch (err) {
+      setError('Failed to capture frame: ' + err.message);
+      setIsAnalyzing(false);
+    }
+  }, [analyzeFrame]);
+
+  const autoSubmitIssue = useCallback(async () => {
     if (!detectedIssue) return;
 
     setAutoSubmitting(true);
@@ -445,7 +447,7 @@ const AdminLiveDetection = () => {
     } finally {
       setAutoSubmitting(false);
     }
-  };
+  }, [detectedIssue, lastCapture]);
 
   return (
     <div style={{ background: '#0f172a', color: '#fff', minHeight: '100vh', padding: '20px' }}>

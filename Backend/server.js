@@ -16,9 +16,9 @@ const io = new Server(server, {
 
 // Web Push VAPID Keys
 webpush.setVapidDetails(
-  'mailto:your-email@example.com', // Replace with your email
-  'BNFv81Fm-YtTS4CRN9I2SLiDJ1lsM5ALR3qJ4SJCHgP2teBhGq_ds9HJbXoPxlBWfcQzCbTqHHMmXg50rhrWs9M', // Public Key
-  'XK_y_Ju2VyGwBBfOyz7Vlpj0Y0bPURwBpQ_DTj0eyCk' // Private Key
+  process.env.VAPID_EMAIL || 'mailto:admin@civicsense.in',
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
 );
 
 app.use((req, res, next) => {

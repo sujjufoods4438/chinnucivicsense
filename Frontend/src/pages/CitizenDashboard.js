@@ -39,7 +39,7 @@ function CitizenDashboard() {
   const [expanded, setExpanded] = useState(null);
   const [notification, setNotification] = useState('');
   const [ringtone, setRingtone] = useState(localStorage.getItem('ringtone') || 'triangle');
-  const { t } = useTranslation(); // eslint-disable-line no-unused-vars
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const token = localStorage.getItem('token');

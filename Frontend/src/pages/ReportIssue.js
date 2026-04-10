@@ -223,8 +223,6 @@ function ReportIssue() {
         const predictions = await model.classify(imageElement);
         const labels = predictions.map(p => p.className.toLowerCase()).join(' ');
         const topLabel = predictions[0]?.className || 'unknown';
-        const topProbability = predictions[0]?.probability || 0;
-        const topConfidence = (topProbability * 100).toFixed(1);
         console.log('MobileNet Labels:', labels);
 
         // Classify civic content
