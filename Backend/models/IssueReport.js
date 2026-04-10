@@ -1,5 +1,25 @@
 const mongoose = require('mongoose');
 
+const progressImageSchema = new mongoose.Schema({
+  status: {
+    type: String,
+    enum: ['in_progress', 'resolved', 'rejected'],
+    required: true
+  },
+  image: {
+    type: String,
+    required: true
+  },
+  comments: {
+    type: String,
+    default: ''
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const issueReportSchema = new mongoose.Schema({
   reportedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -8,8 +28,11 @@ const issueReportSchema = new mongoose.Schema({
   },
   issueType: {
     type: String,
-    enum: ['pothole', 'garbage', 'streetlight', 'damaged_road', 'water_leak', 'other'],
     required: [true, 'Please specify issue type']
+  },
+  title: {
+    type: String,
+    default: ''
   },
   description: {
     type: String,
@@ -61,7 +84,7 @@ const issueReportSchema = new mongoose.Schema({
   },
   priority: {
     type: String,
-    enum: ['low', 'medium', 'high'],
+    enum: ['low', 'medium', 'high', 'critical'],
     default: 'medium'
   },
   assignedTo: {
@@ -80,6 +103,13 @@ const issueReportSchema = new mongoose.Schema({
   votes: {
     type: Number,
     default: 0
+  },
+  // Progress images array - tracks visual progress of the issue
+  progressImages: [progressImageSchema],
+  // Whether this was detected via live camera
+  isLiveDetection: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,

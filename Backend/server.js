@@ -45,9 +45,27 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 if (!process.env.MONGODB_URI) {
   console.error("❌ MONGODB_URI not set in environment variables");
 } else {
-  mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("✅ MongoDB connected"))
-    .catch(err => console.error("❌ MongoDB connection error:", err));
+mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      family: 4, // Use IPv4, skip IPv6
+      maxPoolSize: 10,
+      retryWrites: true,
+      w: 'majority'
+    })
+    .then(async () => {
+      console.log("✅ MongoDB connected");
+      // Test ping
+      await mongoose.connection.db.admin().ping();
+      console.log("🏓 MongoDB ping successful");
+    })
+    .catch(err => {
+      console.error("❌ MongoDB connection failed:", err.message);
+      console.error("💡 Fix: Check .env MONGODB_URI, Atlas whitelist, network/DNS");
+      console.error("💡 Test DNS: nslookup [hostname from error]");
+      process.exit(1); // Exit on DB failure
+    });
 }
 
 

@@ -27,7 +27,8 @@ const {
   getUserIssues,
   getIssueById,
   updateIssue,
-  getStatistics
+  getStatistics,
+  addProgressImage
 } = require('../controllers/issueController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -42,5 +43,6 @@ router.get('/:id', getIssueById); // Get issue by ID
 router.get('/', protect, authorize('admin'), getAllIssues); // Get all issues
 router.put('/:id', protect, authorize('admin'), updateIssue); // Update issue
 router.get('/stats/dashboard', protect, authorize('admin'), getStatistics); // Get statistics
+router.post('/:id/progress', protect, authorize('admin'), upload.single('image'), addProgressImage); // Add progress image
 
 module.exports = router;
