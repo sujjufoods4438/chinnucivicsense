@@ -1,29 +1,13 @@
-# MongoDB Connection Fix - Steps to Complete
+# IssueReport Enum Fix Plan
 
-## [x] 1. Create .env file
-✅ Backend/.env created with all vars (MONGODB_URI, JWT_SECRET, ADMIN creds, etc.).
+**Problem:** `tub, vat` not valid enum value for issueType
 
-## [ ] 2. Atlas Setup (if new cluster)
-- Go to [MongoDB Atlas](https://cloud.mongodb.com)
-- Create free M7 cluster
-- Whitelist IP: 0.0.0/0 (for dev)
-- Create DB user and get connection string
-- Update .env
+**Status:** 
+- Model: No enum
+- Controller: Mock random OK
+- Frontend AI: Sets civicType: 'garbage', 'pothole' etc.
 
-## [ ] 3. Test connection
-```
-cd Backend
-npm install
-npm start
-```
-Look for "✅ MongoDB connected"
+**Fix:** Add enum to model + map AI results
 
-## [ ] 4. Network Test (if still fails)
-```
-nslookup ac-uerjrrh-shard-00-00.viambc2.mongodb.net
-```
-If fails, disable VPN/firewall or use mobile hotspot.
-
-## [x] 5. Code Updates Complete (server.js improved, .env.example created)
-
-**Progress: Code ready. User setup pending.**
+**Step 1:** ✅ Understand files
+**Step 2:** ✅ IssueReport enum added + controller normalized issueType to 'other'

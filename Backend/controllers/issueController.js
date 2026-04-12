@@ -14,14 +14,14 @@ exports.createIssueReport = async (req, res) => {
     const { description, location, image, latitude, longitude, isLiveDetection } = req.body;
     let { issueType } = req.body;
 
-    if (!description || !location) {
+    if (!description || !location || typeof location === 'string' && !location.trim()) {
       return res.status(400).json({ success: false, message: 'Please provide description and location' });
     }
 
-    // --- MOCK AI DETECTION ---
-    if (!issueType || issueType === 'undefined' || issueType === '') {
-      const types = ['pothole', 'garbage', 'water_leak', 'damaged_road'];
-      issueType = types[Math.floor(Math.random() * types.length)];
+    // Validate and normalize issueType from frontend AI
+    const validTypes = ['pothole', 'garbage', 'water_leak', 'damaged_road', 'streetlight', 'other'];
+    if (!validTypes.includes(issueType)) {
+      issueType = 'other';
     }
 
     // Auto-detect priority

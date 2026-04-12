@@ -7,22 +7,21 @@ import * as tf from "@tensorflow/tfjs";
 import * as mobilenet from "@tensorflow-models/mobilenet";
 import { detectAIImage, classifyCivicContent } from '../utils/aiImageDetector';
 import { VoiceReporter } from '../utils/voiceReporter';
-// LanguageSelector not used here (inline select used instead)
-
+ 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 import { API_URL } from "../config";
-
+ 
 delete L.Icon.Default.prototype._getIconUrl;
-
+ 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
   iconUrl: require("leaflet/dist/images/marker-icon.png"),
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
-
+ 
 function ReportIssue() {
   const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({
@@ -57,7 +56,7 @@ function ReportIssue() {
   const [model, setModel] = useState(null);
   const [aiResult, setAiResult] = useState(null);
   const [aiDetecting, setAiDetecting] = useState(false);
-
+ 
   const [cameraMode, setCameraMode] = useState(false);
   const [faceWarning, setFaceWarning] = useState(false);
   const [civicConfidence, setCivicConfidence] = useState(0);
@@ -66,7 +65,13 @@ function ReportIssue() {
   const [overrideReason, setOverrideReason] = useState('');
   const [googleCheckResult, setGoogleCheckResult] = useState(null);
   const [contentCheckResult, setContentCheckResult] = useState(null);
-
+ 
+  // ✅ Valid issue types that match backend enum
+  const VALID_ISSUE_TYPES = [
+    'garbage', 'pothole', 'road_crack', 'streetlight',
+    'water_leak', 'open_drain', 'damaged_road', 'other'
+  ];
+ 
   const handleLocationChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -77,7 +82,7 @@ function ReportIssue() {
       }
     });
   };
-
+ 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -85,7 +90,7 @@ function ReportIssue() {
       [name]: value
     });
   };
-
+ 
   const handleImageChange = (e) => {
     setFormData({
       ...formData,
@@ -100,16 +105,14 @@ function ReportIssue() {
       }
     }
   };
-
+ 
   const startVoiceInput = () => {
     if (!VoiceReporter.init()) {
       setError(t('voiceReport.notSupported'));
       return;
     }
-
     setVoiceActive(true);
     setVoiceTranscript('');
-
     VoiceReporter.start(
       (result) => {
         setVoiceTranscript(result.final || result.interim);
@@ -126,7 +129,7 @@ function ReportIssue() {
       }
     );
   };
-
+ 
   const stopVoiceInput = () => {
     const finalTranscript = VoiceReporter.stop();
     setVoiceActive(false);
@@ -137,14 +140,14 @@ function ReportIssue() {
       }));
     }
   };
-
+ 
   const handleEmergencyChange = (e) => {
     setIsEmergency(e.target.checked);
     if (e.target.checked) {
       setSuccess(t('emergency.systemAlert'));
     }
   };
-
+ 
   useEffect(() => {
     const loadModel = async () => {
       try {
@@ -157,7 +160,7 @@ function ReportIssue() {
       }
     };
     loadModel();
-
+ 
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
@@ -165,7 +168,7 @@ function ReportIssue() {
       if (previewSrc) URL.revokeObjectURL(previewSrc);
     };
   }, [previewSrc]);
-
+ 
   const validateImageWithAI = async (imageElement) => {
     setAiDetecting(true);
     setAiResult(null);
@@ -174,9 +177,8 @@ function ReportIssue() {
     setFaceWarning(false);
     setCivicMatched(false);
     setCivicConfidence(0);
-
+ 
     try {
-      // Step 1: Run AI/Real detection + Google image detection
       let detection;
       try {
         detection = await detectAIImage(imageElement, formData.image);
@@ -186,13 +188,11 @@ function ReportIssue() {
         setAiDetecting(false);
         return true;
       }
-
-      // Store Google check result for display
+ 
       if (detection.googleCheck) {
         setGoogleCheckResult(detection.googleCheck);
       }
-
-      // Block Google/internet images
+ 
       if (detection.googleCheck && detection.googleCheck.isGoogleImage) {
         setAiResult({
           type: 'google_image',
@@ -205,8 +205,7 @@ function ReportIssue() {
         setAiDetecting(false);
         return false;
       }
-
-      // Block AI-generated images
+ 
       if (!detection.isReal) {
         setAiResult({
           type: 'ai_generated',
@@ -219,19 +218,17 @@ function ReportIssue() {
         setAiDetecting(false);
         return false;
       }
-
-      // Step 2: MobileNet classification for civic content
+ 
+      // ✅ MobileNet classification
       if (model) {
         const predictions = await model.classify(imageElement);
-        const labels = predictions.map(p => p.className.toLowerCase()).join(' ');
         const topLabel = predictions[0]?.className || 'unknown';
-        console.log('MobileNet Labels:', labels);
-
-        // Classify civic content
-        const contentResult = await classifyCivicContent(predictions);
+        console.log('MobileNet Predictions:', predictions);
+ 
+        const contentResult = classifyCivicContent(predictions);
         setContentCheckResult(contentResult);
-
-        // Block human images
+        console.log('Civic Classification:', contentResult);
+ 
         if (contentResult.isHuman) {
           setFaceWarning(true);
           setAiResult({
@@ -245,8 +242,7 @@ function ReportIssue() {
           setAiDetecting(false);
           return false;
         }
-
-        // Block document/certificate images
+ 
         if (contentResult.isDocument) {
           setAiResult({
             type: 'invalid_content',
@@ -259,20 +255,17 @@ function ReportIssue() {
           setAiDetecting(false);
           return false;
         }
-
-        // Set civic confidence
+ 
         setCivicConfidence(contentResult.civicScore);
         setCivicMatched(contentResult.isCivic);
-
-        // Auto-fill form based on classification
-        const fileName = formData.image?.name?.toLowerCase() || '';
-        let locationStr = formData.location.streetName || formData.location.area || 'reported location';
-        
-        let issueType = contentResult.isCivic ? contentResult.civicType : topLabel;
-        if (issueType === 'other') {
-          issueType = topLabel; // Override 'other' with the raw AI label natively
-        }
-        
+ 
+        // ✅ FIXED: Always use a valid backend enum value — never raw MobileNet label
+        let issueType = contentResult.isCivic ? contentResult.civicType : 'other';
+        if (!VALID_ISSUE_TYPES.includes(issueType)) issueType = 'other';
+ 
+        const locationStr = formData.location.streetName || formData.location.area || 'reported location';
+ 
+        // ✅ Auto-generate title and description based on classified type
         let autoTitle = '';
         let autoDesc = '';
         if (issueType === 'garbage') {
@@ -281,30 +274,36 @@ function ReportIssue() {
         } else if (issueType === 'pothole') {
           autoTitle = `🕳️ Pothole Damage at ${locationStr}`;
           autoDesc = `Dangerous pothole detected. Immediate road repair required.`;
+        } else if (issueType === 'road_crack') {
+          autoTitle = `🛣️ Road Crack at ${locationStr}`;
+          autoDesc = `Road surface cracking detected at ${locationStr}. Repair needed to prevent accidents.`;
         } else if (issueType === 'streetlight') {
           autoTitle = `💡 Streetlight Failure at ${locationStr}`;
-          autoDesc = `Public lighting not working. Safety hazard at night.`;
+          autoDesc = `Public lighting not working at ${locationStr}. Safety hazard at night.`;
         } else if (issueType === 'water_leak') {
           autoTitle = `💧 Water Leak at ${locationStr}`;
-          autoDesc = `Water leakage/drainage issue. Risk of flooding.`;
+          autoDesc = `Water leakage/drainage issue at ${locationStr}. Risk of flooding.`;
+        } else if (issueType === 'open_drain') {
+          autoTitle = `🚰 Open Drain at ${locationStr}`;
+          autoDesc = `Uncovered or blocked drain at ${locationStr}. Public safety hazard.`;
         } else if (issueType === 'damaged_road') {
-          autoTitle = `🛣️ Damaged Road at ${locationStr}`;
-          autoDesc = `Road infrastructure damage requiring repair.`;
+          autoTitle = `🚧 Damaged Road at ${locationStr}`;
+          autoDesc = `Road infrastructure damage at ${locationStr} requiring repair.`;
         } else {
           autoTitle = `📍 Civic Issue at ${locationStr}`;
-          autoDesc = `AI detected civic infrastructure problem: ${topLabel}`;
+          autoDesc = `Civic infrastructure problem detected at ${locationStr}. AI label: ${topLabel}`;
         }
-
+ 
         setFormData(prev => ({
           ...prev,
           issueType: issueType,
           title: autoTitle,
           description: autoDesc
         }));
-
-        console.log(`✅ AI CLASSIFIED: ${issueType} from filename: ${fileName} | label: ${topLabel}`);
+ 
+        console.log(`✅ CLASSIFIED issueType: "${issueType}" | MobileNet top label: "${topLabel}"`);
       }
-
+ 
       setAiResult({
         type: 'real',
         confidence: detection.confidence,
@@ -312,38 +311,36 @@ function ReportIssue() {
         scores: detection.scores,
         googleCheck: detection.googleCheck
       });
-
+ 
       if (cameraMode) {
         setSuccess('Live camera issue detected. Auto-submitting report...');
         await submitReport();
         setCameraMode(false);
       }
-
+ 
       setAiDetecting(false);
       return true;
-
+ 
     } catch (err) {
       console.error('Validation error:', err);
       setAiDetecting(false);
       return true;
     }
   };
-
+ 
   const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.srcObject = null;
     }
-
     setCameraActive(false);
     setCameraMode(false);
   };
-
+ 
   const startCamera = async () => {
     setCameraError("");
     try {
@@ -351,9 +348,9 @@ function ReportIssue() {
         quality: 90,
         allowEditing: false,
         resultType: CameraResultType.Uri,
-        source: CameraSource.Camera 
+        source: CameraSource.Camera
       });
-
+ 
       if (image && image.webPath) {
         setPreviewSrc(image.webPath);
         const response = await fetch(image.webPath);
@@ -371,7 +368,7 @@ function ReportIssue() {
       }
     }
   };
-
+ 
   const capturePhoto = async () => {
     try {
       const video = videoRef.current;
@@ -386,13 +383,9 @@ function ReportIssue() {
       setFormData(prev => ({ ...prev, image: file }));
       const url = URL.createObjectURL(file);
       setPreviewSrc(url);
-
       const img = new Image();
-      img.onload = async () => {
-        await validateImageWithAI(img);
-      };
+      img.onload = async () => { await validateImageWithAI(img); };
       img.src = url;
-
       stopCamera();
       setSuccess('Photo captured');
     } catch (err) {
@@ -400,7 +393,7 @@ function ReportIssue() {
       setCameraError('Capture failed');
     }
   };
-
+ 
   const handleCopyMunicipality = async () => {
     const muni = formData.location.municipality || '';
     if (!muni) return setError('No municipality to copy');
@@ -411,117 +404,75 @@ function ReportIssue() {
       setError('Failed to copy');
     }
   };
-
+ 
   const handleContactMunicipality = () => {
     const muni = formData.location.municipality || '';
     const subject = encodeURIComponent('Civic Issue: ' + (formData.title || formData.issueType || ''));
     const body = encodeURIComponent(`Please contact the municipality (${muni}) regarding an issue at coordinates: ${formData.latitude}, ${formData.longitude}`);
     window.open(`mailto:?subject=${subject}&body=${body}`);
   };
-
+ 
   const handleChangeLocation = () => {
     setFormData({
       ...formData,
       latitude: null,
       longitude: null,
-      location: {
-        streetName: '', 
-        area: '',
-        city: '',
-        district: '',
-        state: '',
-        municipality: ''
-      }
+      location: { streetName: '', area: '', city: '', district: '', state: '', municipality: '' }
     });
     setSuccess('You can now enter location manually');
   };
-
+ 
   const handleGetLocation = async () => {
     try {
-      const coordinates = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true
-      });
+      const coordinates = await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
       const lat = coordinates.coords.latitude;
       const lon = coordinates.coords.longitude;
-
-        setFormData(prev => ({
-          ...prev,
-          latitude: lat,
-          longitude: lon
-        }));
-
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&zoom=18`, {
-          headers: {
-            "Accept": "application/json"
-          }
+      setFormData(prev => ({ ...prev, latitude: lat, longitude: lon }));
+ 
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&zoom=18`, {
+        headers: { "Accept": "application/json" }
+      })
+        .then(res => { if (!res.ok) throw new Error("Reverse geocoding API failed"); return res.json(); })
+        .then(data => {
+          if (!data || !data.address) throw new Error("No address data");
+          const addr = data.address;
+          const streetParts = [addr.house_number, addr.road || addr.pedestrian || addr.cycleway || addr.footway, addr.neighbourhood].filter(Boolean);
+          const streetName = streetParts.length > 0
+            ? streetParts.join(', ')
+            : (addr.display_name ? addr.display_name.split(',').slice(0, 2).join(',') : 'Unknown Street');
+          setFormData(prev => ({
+            ...prev,
+            location: {
+              streetName,
+              area: addr.neighbourhood || addr.suburb || addr.city_district || '',
+              city: addr.city || addr.town || addr.village || '',
+              district: addr.county || addr.state_district || '',
+              state: addr.state || '',
+              municipality: addr.city || addr.town || addr.village || addr.county || ''
+            }
+          }));
+          setSuccess('Location obtained successfully with street name');
         })
-          .then(res => {
-            if (!res.ok) {
-              throw new Error("Reverse geocoding API failed");
-            }
-            return res.json();
-          })
-          .then(data => {
-            if (!data || !data.address) {
-              throw new Error("No address data");
-            }
-
-            const addr = data.address;
-
-            // Build a detailed street name from multiple address components
-            const streetParts = [
-              addr.house_number,
-              addr.road || addr.pedestrian || addr.cycleway || addr.footway,
-              addr.neighbourhood,
-            ].filter(Boolean);
-            
-            const streetName = streetParts.length > 0 
-              ? streetParts.join(', ') 
-              : (addr.display_name ? addr.display_name.split(',').slice(0, 2).join(',') : 'Unknown Street');
-
-            setFormData(prev => ({
-              ...prev,
-              location: {
-                streetName: streetName,
-                area: addr.neighbourhood || addr.suburb || addr.city_district || '',
-                city: addr.city || addr.town || addr.village || '',
-                district: addr.county || addr.state_district || '',
-                state: addr.state || '',
-                municipality: addr.city || addr.town || addr.village || addr.county || ''
-              }
-            }));
-
-            setSuccess('Location obtained successfully with street name');
-          })
-          .catch((err) => {
-            console.error('Reverse geocode failed:', err);
-
-            setFormData(prev => ({
-              ...prev,
-              location: {
-                streetName: "GPS Location",
-                area: "",
-                city: `Lat: ${lat.toFixed(5)}`,
-                district: "",
-                state: "",
-                municipality: ""
-              }
-            }));
-
-            setSuccess('Location coordinates obtained (address lookup limited)');
-          });
+        .catch((err) => {
+          console.error('Reverse geocode failed:', err);
+          setFormData(prev => ({
+            ...prev,
+            location: { streetName: "GPS Location", area: "", city: `Lat: ${lat.toFixed(5)}`, district: "", state: "", municipality: "" }
+          }));
+          setSuccess('Location coordinates obtained (address lookup limited)');
+        });
     } catch (error) {
       setError('Could not get location: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
-
+ 
   const submitReport = async () => {
     setError('');
     setSuccess('');
     setLoading(true);
-
+ 
     if (aiResult && aiResult.type !== 'real') {
       if (!overrideMode || !overrideReason.trim()) {
         setError('Cannot submit: image validation failed. Provide override reason if you believe this is valid.');
@@ -529,14 +480,14 @@ function ReportIssue() {
         return;
       }
     }
-
+ 
     const token = localStorage.getItem('token');
     if (!token) {
       setError('Please login first');
       setLoading(false);
       return;
     }
-
+ 
     try {
       const fd = new FormData();
       fd.append('issueType', formData.issueType);
@@ -545,46 +496,35 @@ function ReportIssue() {
       fd.append('latitude', formData.latitude || '');
       fd.append('longitude', formData.longitude || '');
       fd.append('location', JSON.stringify(formData.location || {}));
-
+ 
       if (isEmergency) {
         fd.append('isEmergency', 'true');
         fd.append('emergencyPriority', emergencyPriority);
       }
-
+ 
       if (overrideMode && overrideReason.trim()) {
         fd.append('overrideReason', overrideReason.trim());
       }
-
+ 
       if (formData.image instanceof File) {
         fd.append('image', formData.image);
       } else if (formData.image) {
         fd.append('image', formData.image);
       }
-
+ 
       const response = await axios.post(`${API_URL}/issues`, fd, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-
+ 
       if (response.data.success) {
         setSuccess(t('common.success') + '! ' + t('reportIssue.title'));
         setFormData({
-          issueType: '',
-          title: '',
-          description: '',
-          location: {
-            streetName: '',
-            area: '',
-            city: '',
-            district: '',
-            state: '',
-            municipality: ''
-          },
-          latitude: null,
-          longitude: null,
-          image: null
+          issueType: '', title: '', description: '',
+          location: { streetName: '', area: '', city: '', district: '', state: '', municipality: '' },
+          latitude: null, longitude: null, image: null
         });
         setIsEmergency(false);
         setEmergencyPriority('medium');
@@ -598,12 +538,12 @@ function ReportIssue() {
       setLoading(false);
     }
   };
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await submitReport();
   };
-
+ 
   return (
     <div className="report-issue-container">
       <div className="report-issue-box">
@@ -620,9 +560,7 @@ function ReportIssue() {
             <h3 style={{ margin: '0 0 10px 0', color: '#667eea', fontSize: '16px' }}>
               🤖 {t('reportIssue.title')}
             </h3>
-            <p style={{ margin: '0 6px 6px 0', color: '#333', fontWeight: 600 }}>
-              {t('reportIssue.workflow')}
-            </p>
+            <p style={{ margin: '0 6px 6px 0', color: '#333', fontWeight: 600 }}>{t('reportIssue.workflow')}</p>
             <ul style={{ margin: '0 0 8px 16px', color: '#555', fontSize: '14px', lineHeight: 1.45 }}>
               <li>{t('reportIssue.workflowStep1')}</li>
               <li>{t('reportIssue.workflowStep2')}</li>
@@ -630,28 +568,14 @@ function ReportIssue() {
               <li>{t('reportIssue.workflowStep4')}</li>
               <li>{t('reportIssue.workflowStep5')}</li>
             </ul>
-            <p style={{ margin: 0, color: '#555', fontSize: '14px' }}>
-              {t('reportIssue.liveCameraNote')}
-            </p>
+            <p style={{ margin: 0, color: '#555', fontSize: '14px' }}>{t('reportIssue.liveCameraNote')}</p>
           </div>
-
+ 
           <div className="form-group">
             <label>{t('reportIssue.voiceReport')}</label>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-              <button
-                type="button"
-                onClick={voiceActive ? stopVoiceInput : startVoiceInput}
-                style={{
-                  flex: 1,
-                  padding: '10px 12px',
-                  background: voiceActive ? '#dc2626' : '#3b82f6',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-              >
+              <button type="button" onClick={voiceActive ? stopVoiceInput : startVoiceInput}
+                style={{ flex: 1, padding: '10px 12px', background: voiceActive ? '#dc2626' : '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
                 {voiceActive ? t('reportIssue.stopVoice') : t('reportIssue.startVoice')}
               </button>
             </div>
@@ -666,36 +590,20 @@ function ReportIssue() {
               </div>
             )}
           </div>
-
+ 
           <div className="form-group">
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={isEmergency}
-                onChange={handleEmergencyChange}
-                style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-              />
+              <input type="checkbox" checked={isEmergency} onChange={handleEmergencyChange}
+                style={{ cursor: 'pointer', width: '18px', height: '18px' }} />
               <span style={{ fontWeight: 600, color: isEmergency ? '#dc2626' : '#374151' }}>
                 {t('reportIssue.markAsEmergency')}
               </span>
             </label>
             {isEmergency && (
               <div style={{ marginTop: '10px', padding: '10px 12px', background: '#fef2f2', border: '1px solid #dc2626', borderRadius: '6px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#991b1b' }}>
-                  {t('emergency.priority')}:
-                </label>
-                <select
-                  value={emergencyPriority}
-                  onChange={(e) => setEmergencyPriority(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 10px',
-                    borderRadius: '4px',
-                    border: '1px solid #fca5a5',
-                    background: '#fff',
-                    color: '#991b1b'
-                  }}
-                >
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#991b1b' }}>{t('emergency.priority')}:</label>
+                <select value={emergencyPriority} onChange={(e) => setEmergencyPriority(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '4px', border: '1px solid #fca5a5', background: '#fff', color: '#991b1b' }}>
                   <option value="critical">{t('reportIssue.emergencyCritical')}</option>
                   <option value="high">{t('reportIssue.emergencyHigh')}</option>
                   <option value="medium">{t('reportIssue.emergencyMedium')}</option>
@@ -703,72 +611,56 @@ function ReportIssue() {
               </div>
             )}
           </div>
-
+ 
           <div className="form-group">
             <label>{t('reportIssue.uploadImage')}</label>
             <div className="image-upload-box">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                id="fileInput"
-              />
+              <input type="file" accept="image/*" onChange={handleImageChange} id="fileInput" />
               <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
                 <button type="button" className="btn-secondary" onClick={() => document.getElementById('fileInput').click()}>{t('reportIssue.chooseImage')}</button>
                 <button type="button" className="btn-secondary" onClick={startCamera}>{t('reportIssue.useCamera')}</button>
               </div>
-
+ 
               {cameraError && <div className="error" style={{ marginTop: 8 }}>{cameraError}</div>}
-
+ 
               {cameraActive && (
                 <div className="camera-box">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    style={{
-                      width: "100%",
-                      height: "300px",
-                      objectFit: "cover",
-                      borderRadius: "10px",
-                      background: "black"
-                    }}
-                  />
+                  <video ref={videoRef} autoPlay playsInline muted
+                    style={{ width: "100%", height: "300px", objectFit: "cover", borderRadius: "10px", background: "black" }} />
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     <button type="button" className="btn-location" onClick={capturePhoto}>{t('reportIssue.capturePhoto')}</button>
                     <button type="button" className="btn-secondary" onClick={stopCamera}>{t('reportIssue.closeCamera')}</button>
                   </div>
                 </div>
               )}
-
+ 
               {previewSrc && (
                 <div style={{ marginTop: 10 }}>
-                  <img
-                    id="previewImage"
-                    src={previewSrc}
-                    alt="preview"
+                  <img id="previewImage" src={previewSrc} alt="preview"
                     style={{ maxWidth: 200, borderRadius: 8, border: '2px solid #e5e7eb', display: 'block' }}
-                    onLoad={(e) => {
-                      if (formData.image) validateImageWithAI(e.target);
-                    }}
-                  />
+                    onLoad={(e) => { if (formData.image) validateImageWithAI(e.target); }} />
                 </div>
               )}
-
+ 
+              {/* ✅ Show detected issue type badge */}
+              {formData.issueType && (
+                <div style={{ marginTop: 10, padding: '8px 14px', borderRadius: 8, background: '#eff6ff', border: '1px solid #93c5fd', color: '#1d4ed8', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  🏷️ Detected Issue Type: <span style={{ textTransform: 'capitalize' }}>{formData.issueType.replace('_', ' ')}</span>
+                </div>
+              )}
+ 
               {civicMatched && (
                 <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: '#f0fdf4', border: '1px solid #86efac', color: '#166534', fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>
                   {t('reportIssue.civicMatched')}
                 </div>
               )}
-
+ 
               {civicMatched && (
                 <div style={{ marginTop: 10 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 }}>{t('reportIssue.civicConfidence')}: {civicConfidence}%</div>
                   <div style={{ height: 8, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
                     <div style={{
-                      height: '100%',
-                      borderRadius: 4,
+                      height: '100%', borderRadius: 4,
                       width: `${civicConfidence}%`,
                       background: civicConfidence >= 70 ? '#10b981' : civicConfidence >= 50 ? '#f59e0b' : '#ef4444',
                       transition: 'width 0.5s'
@@ -776,18 +668,17 @@ function ReportIssue() {
                   </div>
                 </div>
               )}
-
+ 
               <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: '#fff1f2', border: '1px solid #fecaca', color: '#b91c1c', fontWeight: 700, display: 'inline-flex', alignItems: 'center' }}>
                 {t('reportIssue.realCivicImage')}
               </div>
-
+ 
               {faceWarning && (
                 <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, background: '#fefce8', border: '1px solid #f59e0b', color: '#92400e', fontWeight: 700 }}>
                   {t('reportIssue.faceWarning')}
                 </div>
               )}
-
-              {/* Google Image Detection Result */}
+ 
               {googleCheckResult && (
                 <div style={{
                   marginTop: 10, padding: '10px 12px', borderRadius: 8,
@@ -797,12 +688,9 @@ function ReportIssue() {
                   fontWeight: 600, fontSize: 13
                 }}>
                   {googleCheckResult.isGoogleImage ? (
-                    <>
-                      {t('imageValidation.googleWarning')}
+                    <>{t('imageValidation.googleWarning')}
                       <div style={{ marginTop: 4, fontSize: 12, fontWeight: 400 }}>
-                        {googleCheckResult.signals && googleCheckResult.signals.map((s, i) => (
-                          <div key={i}>• {s}</div>
-                        ))}
+                        {googleCheckResult.signals && googleCheckResult.signals.map((s, i) => <div key={i}>• {s}</div>)}
                       </div>
                     </>
                   ) : (
@@ -810,8 +698,7 @@ function ReportIssue() {
                   )}
                 </div>
               )}
-
-              {/* Content Classification Result */}
+ 
               {contentCheckResult && (
                 <div style={{
                   marginTop: 10, padding: '10px 12px', borderRadius: 8,
@@ -826,15 +713,12 @@ function ReportIssue() {
                         ? `🚫 ${t('imageValidation.invalidContent')}: Human/Person`
                         : contentCheckResult.isDocument
                           ? `🚫 ${t('imageValidation.invalidContent')}: Document/Certificate`
-                          : `⚠️ AI Label: ${contentCheckResult.topLabel}`
-                    }
+                          : `⚠️ AI Label: ${contentCheckResult.topLabel}`}
                   </div>
-                  <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>
-                    {contentCheckResult.reason}
-                  </div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#6b7280' }}>{contentCheckResult.reason}</div>
                 </div>
               )}
-
+ 
               {aiDetecting && (
                 <div style={{ marginTop: 14, padding: '14px 16px', background: '#f0f4ff', borderRadius: 10, borderLeft: '4px solid #6366f1', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ width: 20, height: 20, border: '3px solid #c7d2fe', borderTopColor: '#4338ca', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
@@ -844,31 +728,24 @@ function ReportIssue() {
                   </div>
                 </div>
               )}
-
+ 
               {aiResult && !aiDetecting && (() => {
                 const isReal = aiResult.type === 'real';
                 const isInvalid = aiResult.type === 'invalid_content';
                 const isGoogle = aiResult.type === 'google_image';
                 const s = aiResult.scores || {};
                 const factors = [
-                  { label: t('imageValidation.exifMetadata'), score: s.exifScore, tip: 'Camera metadata presence' },
-                  { label: t('imageValidation.sensorNoise'), score: s.noiseScore, tip: 'Natural camera noise level' },
-                  { label: t('imageValidation.edgeFrequency'), score: s.edgeScore, tip: 'Edge variation (AI = too uniform)' },
-                  { label: t('imageValidation.colorChannels'), score: s.channelScore, tip: 'RGB channel correlation' },
-                  { label: t('imageValidation.blockArtifacts'), score: s.blockScore, tip: 'AI model grid patterns' },
+                  { label: t('imageValidation.exifMetadata'), score: s.exifScore },
+                  { label: t('imageValidation.sensorNoise'), score: s.noiseScore },
+                  { label: t('imageValidation.edgeFrequency'), score: s.edgeScore },
+                  { label: t('imageValidation.colorChannels'), score: s.channelScore },
+                  { label: t('imageValidation.blockArtifacts'), score: s.blockScore },
                 ];
                 return (
-                  <div style={{
-                    marginTop: 14, borderRadius: 12, overflow: 'hidden',
-                    border: `2px solid ${isReal ? '#10b981' : isGoogle ? '#f97316' : isInvalid ? '#f59e0b' : '#ef4444'}`,
-                    background: isReal ? '#f0fdf4' : isGoogle ? '#fff7ed' : isInvalid ? '#fffbeb' : '#fef2f2'
-                  }}>
+                  <div style={{ marginTop: 14, borderRadius: 12, overflow: 'hidden', border: `2px solid ${isReal ? '#10b981' : isGoogle ? '#f97316' : isInvalid ? '#f59e0b' : '#ef4444'}`, background: isReal ? '#f0fdf4' : isGoogle ? '#fff7ed' : isInvalid ? '#fffbeb' : '#fef2f2' }}>
                     <div style={{ padding: '12px 16px', background: isReal ? '#10b981' : isGoogle ? '#f97316' : isInvalid ? '#f59e0b' : '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
-                        {isReal ? `✅ ${t('imageValidation.realVerified').toUpperCase()}` 
-                          : isGoogle ? `🌐 ${t('imageValidation.googleImage').toUpperCase()}`
-                          : isInvalid ? `🚫 ${t('imageValidation.invalidContent').toUpperCase()}` 
-                          : `🤖 ${t('imageValidation.aiGenerated').toUpperCase()}`}
+                        {isReal ? `✅ ${t('imageValidation.realVerified').toUpperCase()}` : isGoogle ? `🌐 ${t('imageValidation.googleImage').toUpperCase()}` : isInvalid ? `🚫 ${t('imageValidation.invalidContent').toUpperCase()}` : `🤖 ${t('imageValidation.aiGenerated').toUpperCase()}`}
                       </div>
                       <div style={{ background: 'rgba(255,255,255,0.25)', color: '#fff', borderRadius: 20, padding: '2px 12px', fontWeight: 700, fontSize: 13 }}>
                         {isInvalid ? 'Invalid' : isGoogle ? 'Google' : `${aiResult.confidence}% ${isReal ? 'Real' : 'AI'}`}
@@ -886,57 +763,29 @@ function ReportIssue() {
                             <span style={{ color: f.score >= 60 ? '#10b981' : f.score >= 35 ? '#f59e0b' : '#ef4444', fontWeight: 600 }}>{f.score ?? '—'}%</span>
                           </div>
                           <div style={{ height: 5, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
-                            <div style={{
-                              height: '100%', borderRadius: 3, transition: 'width 0.5s',
-                              width: `${f.score ?? 0}%`,
-                              background: f.score >= 60 ? '#10b981' : f.score >= 35 ? '#f59e0b' : '#ef4444'
-                            }} />
+                            <div style={{ height: '100%', borderRadius: 3, transition: 'width 0.5s', width: `${f.score ?? 0}%`, background: f.score >= 60 ? '#10b981' : f.score >= 35 ? '#f59e0b' : '#ef4444' }} />
                           </div>
                         </div>
                       ))}
                     </div>
                     {!isReal && !isInvalid && !isGoogle && (
-                      <div style={{ padding: '10px 16px', background: '#fee2e2', color: '#991b1b', fontSize: 13, fontWeight: 500 }}>
-                        {t('imageValidation.uploadRejected')}
-                      </div>
+                      <div style={{ padding: '10px 16px', background: '#fee2e2', color: '#991b1b', fontSize: 13, fontWeight: 500 }}>{t('imageValidation.uploadRejected')}</div>
                     )}
                     {isGoogle && (
-                      <div style={{ padding: '10px 16px', background: '#ffedd5', color: '#9a3412', fontSize: 13, fontWeight: 500 }}>
-                        🌐 {t('imageValidation.googleImage')}
-                      </div>
+                      <div style={{ padding: '10px 16px', background: '#ffedd5', color: '#9a3412', fontSize: 13, fontWeight: 500 }}>🌐 {t('imageValidation.googleImage')}</div>
                     )}
                     {isInvalid && (
-                      <div style={{ padding: '10px 16px', background: '#fef3c7', color: '#92400e', fontSize: 13, fontWeight: 500 }}>
-                        {t('imageValidation.contentFailed')}
-                      </div>
+                      <div style={{ padding: '10px 16px', background: '#fef3c7', color: '#92400e', fontSize: 13, fontWeight: 500 }}>{t('imageValidation.contentFailed')}</div>
                     )}
                     {(isInvalid || isGoogle) && (
                       <div style={{ padding: '12px 16px', background: '#fef3c7', borderTop: '1px solid #fed7aa' }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 6 }}>
-                          {t('imageValidation.overrideReason')}:
-                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 6 }}>{t('imageValidation.overrideReason')}:</div>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <input
-                            type="text"
-                            placeholder={t('imageValidation.overrideReason')}
-                            value={overrideReason}
+                          <input type="text" placeholder={t('imageValidation.overrideReason')} value={overrideReason}
                             onChange={(e) => setOverrideReason(e.target.value)}
-                            style={{ flex: 1, padding: '6px 10px', fontSize: 12, borderRadius: 4, border: '1px solid #d97706' }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setOverrideMode(!overrideMode)}
-                            style={{
-                              padding: '6px 12px',
-                              borderRadius: 4,
-                              border: '1px solid #d97706',
-                              background: overrideMode ? '#d97706' : 'transparent',
-                              color: overrideMode ? '#fff' : '#d97706',
-                              fontWeight: 600,
-                              fontSize: 12,
-                              cursor: 'pointer'
-                            }}
-                          >
+                            style={{ flex: 1, padding: '6px 10px', fontSize: 12, borderRadius: 4, border: '1px solid #d97706' }} />
+                          <button type="button" onClick={() => setOverrideMode(!overrideMode)}
+                            style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #d97706', background: overrideMode ? '#d97706' : 'transparent', color: overrideMode ? '#fff' : '#d97706', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
                             {overrideMode ? `✓ ${t('imageValidation.override')}` : t('imageValidation.override')}
                           </button>
                         </div>
@@ -947,35 +796,21 @@ function ReportIssue() {
               })()}
             </div>
           </div>
-
+ 
           <div className="form-group">
             <label>{t('reportIssue.titleLabel')}</label>
-            <input
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="AI generates from image analysis..."
-              required
-            />
+            <input name="title" value={formData.title} onChange={handleChange} placeholder="AI generates from image analysis..." required />
           </div>
-
+ 
           <div className="form-group">
             <label>{t('reportIssue.descriptionLabel')}</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="AI generates detailed description..."
-              required
-            />
+            <textarea name="description" value={formData.description} onChange={handleChange} placeholder="AI generates detailed description..." required />
           </div>
-
+ 
           <div className="location-section">
             <h3>{t('reportIssue.locationDetails')}</h3>
-            <button type="button" className="btn-location" onClick={handleGetLocation}>
-              {t('reportIssue.getGPS')}
-            </button>
-
+            <button type="button" className="btn-location" onClick={handleGetLocation}>{t('reportIssue.getGPS')}</button>
+ 
             {formData.latitude && formData.longitude && (
               <div style={{ marginTop: '15px', marginBottom: '15px', padding: '14px', background: '#eef2ff', borderRadius: '8px', borderLeft: '4px solid #667eea', fontSize: '14px', color: '#333' }}>
                 <strong style={{ color: '#667eea' }}>📍 {t('reportIssue.gpsCoordinates')}:</strong><br/>
@@ -992,76 +827,40 @@ function ReportIssue() {
                 )}
               </div>
             )}
-
+ 
             <div className="form-row">
               <div className="form-group">
                 <label>{t('reportIssue.streetName')}:</label>
-                <input
-                  type="text"
-                  name="streetName"
-                  value={formData.location.streetName}
-                  onChange={handleLocationChange}
-                  required
-                />
+                <input type="text" name="streetName" value={formData.location.streetName} onChange={handleLocationChange} required />
               </div>
               <div className="form-group">
                 <label>{t('reportIssue.area')}:</label>
-                <input
-                  type="text"
-                  name="area"
-                  value={formData.location.area}
-                  onChange={handleLocationChange}
-                  required
-                />
+                <input type="text" name="area" value={formData.location.area} onChange={handleLocationChange} required />
               </div>
             </div>
-
+ 
             <div className="form-row">
               <div className="form-group">
                 <label>{t('reportIssue.city')}:</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.location.city}
-                  onChange={handleLocationChange}
-                  required
-                />
+                <input type="text" name="city" value={formData.location.city} onChange={handleLocationChange} required />
               </div>
               <div className="form-group">
                 <label>{t('reportIssue.district')}:</label>
-                <input
-                  type="text"
-                  name="district"
-                  value={formData.location.district}
-                  onChange={handleLocationChange}
-                  required
-                />
+                <input type="text" name="district" value={formData.location.district} onChange={handleLocationChange} required />
               </div>
             </div>
-
+ 
             <div className="form-row">
               <div className="form-group">
                 <label>{t('reportIssue.state')}:</label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.location.state}
-                  onChange={handleLocationChange}
-                  required
-                />
+                <input type="text" name="state" value={formData.location.state} onChange={handleLocationChange} required />
               </div>
               <div className="form-group">
                 <label>{t('reportIssue.municipality')}:</label>
-                <input
-                  type="text"
-                  name="municipality"
-                  value={formData.location.municipality}
-                  onChange={handleLocationChange}
-                  required
-                />
+                <input type="text" name="municipality" value={formData.location.municipality} onChange={handleLocationChange} required />
               </div>
             </div>
-
+ 
             {formData.latitude && formData.longitude && (
               <div className="location-panel">
                 <div>
@@ -1077,10 +876,10 @@ function ReportIssue() {
               </div>
             )}
           </div>
-
+ 
           {error && <p className="error">{error}</p>}
           {success && <p className="success">{success}</p>}
-
+ 
           <button type="submit" disabled={loading} className="submit-btn">
             {loading ? t('reportIssue.reporting') : t('reportIssue.submitReport')}
           </button>
@@ -1089,5 +888,6 @@ function ReportIssue() {
     </div>
   );
 }
-
+ 
 export default ReportIssue;
+ 

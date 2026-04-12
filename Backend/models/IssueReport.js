@@ -28,6 +28,7 @@ const issueReportSchema = new mongoose.Schema({
   },
   issueType: {
     type: String,
+    enum: ['garbage', 'pothole', 'road_crack', 'streetlight', 'water_leak', 'open_drain', 'damaged_road', 'other'],
     required: [true, 'Please specify issue type']
   },
   title: {
