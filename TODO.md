@@ -1,49 +1,29 @@
-# CivicSense AI - Bug Fixes & Features TODO
+# CivicSense Mobile Login Fix
+## Plan Progress
 
-## Current Task: Fix Telugu, Image Validation, Street Name, Live Detection, Progress Images
+**✅ Completed:**
+- [x] Backend/server running port 5000
+- [x] Clean DB: 1 test user (chandu@gmail.com / 8885856060)
+- [x] Created deleteAllUsers.js 
 
-### Plan Steps (Approved by User)
+**✅ Completed:**
+- [x] Added 3x retry logic to Login/Signup/AdminLogin (mobile Render cold starts)
+- [ ] Create prod test user (run `node Backend/resetProd.js`) 
+- [x] Frontend build complete (`Frontend/build/` ready)
 
-✅ **Step 1: Complete Telugu i18n (te.json)**  
-   - Add dashboard/complaints/progress keys  
-   - ✅ te.json updated with comprehensive translations  
+**🚀 Deploy:** Drag `Frontend/build/` folder to Netlify dashboard → Live mobile fix!
 
-✅ **Step 2: Backend Model Update**  
-   - ✅ Added `progressImages` array to IssueReport.js  
+**Final Steps:**
+1. `node Backend/resetProd.js` (prod test user)
+2. Netlify deploy
+3. Test mobile login
 
-✅ **Step 3: Backend Controller Enhancements**  
-   - ✅ New `addProgressImage` endpoint  
-   - ✅ `isLiveDetection` handling  
-   - [ ] Restart backend: `cd Backend && npm start`  
+**Next:** `node Backend/resetProd.js` → test mobile → Netlify deploy
 
+**Next Steps:**
+1. Edit auth pages with retry logic
+2. `npm run build` Frontend/
+3. Deploy Netlify
+4. Test mobile
 
-✅ **Step 4: Enhance AI Image Detector**  
-   - ✅ Added civic/human/certificate classification  
-   - ✅ Improved Google image rejection  
-
-
-✅ **Step 5: CitizenDashboard.js Fixes**  
-   - [ ] Full i18n translation  
-   - [ ] Display progress images  
-
-✅ **Step 6: ReportIssue.js Civic Enforcement**  
-   - [ ] Reject non-civic images (human/certificate/Google)  
-   - [ ] Show classification in report  
-
-✅ **Step 7: AdminLiveDetection.js**  
-   - [ ] i18n fixes  
-   - [ ] Admin-only live view flag  
-
-✅ **Step 8: AdminDashboard.js Integration**  
-   - [ ] Live detections section  
-   - [ ] Progress image upload UI  
-
-✅ **Step 9: Testing & Validation**  
-   - [ ] Telugu dashboard test  
-   - [ ] Image rejection tests (human/Google/certificate)  
-   - [ ] Live camera civic-only  
-   - [ ] Progress upload flow  
-   - [ ] Frontend: `npm start` | Backend: `npm start`  
-
-**Next Action: Starting with Step 1 - i18n/te.json**
-
+**Current Status:** Local works. Mobile needs retry for backend wake-up.

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config';
+import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL, API_URL } from '../config';
 import '../styles/Auth.css';
 
 function Login() {
@@ -16,22 +16,45 @@ function Login() {
     setError('');
     setLoading(true);
 
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
-        email,
-        password
-      });
+    const maxRetries = 3;
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const trimmedEmail = email.trim().toLowerCase();
+        const response = await axios.post(`${API_URL}/auth/login`, {
+          email: trimmedEmail,
+          password
+        });
 
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        navigate('/citizen-dashboard');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
-    } finally {
-      setLoading(false);
+        if (response.data.success) {
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+          navigate('/citizen-dashboard');
+          return;
+        }
+      } catch (err) {
+        console.log(`Login attempt ${attempt} failed:`, err.message);
+        lastError = err;
+        
+        if (attempt === maxRetries) {
+          console.error('All login attempts failed:', err);
+          if (err.response) {
+            const errorMsg = err.response.data.message || err.response.data.error || 'Login failed';
+            setError(errorMsg);
+          } else if (err.request) {
+            setError(`Backend waking up... Try again in 60s (${API_BASE_URL})`);
+          } else {
+            setError('Connection error: ' + err.message);
+          }
+          break;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      };
     }
+    
+    setLoading(false);
   };
 
   return (
@@ -63,10 +86,10 @@ function Login() {
           </button>
         </form>
         <p>
-          Don't have an account? <a href="/signup">Sign up here</a>
+          Don't have an account? <Link to="/signup">Sign up here</Link>
         </p>
         <p>
-          Are you an admin? <a href="/admin-login">Admin Login</a>
+          Are you an admin? <Link to="/admin-login">Admin Login</Link>
         </p>
       </div>
     </div>

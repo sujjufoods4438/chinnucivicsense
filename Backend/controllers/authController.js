@@ -1,15 +1,26 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || process.env.jwt_secret;
+
+const signAuthToken = (payload) => {
+  if (!JWT_SECRET) {
+    throw new Error('JWT secret is not configured');
+  }
+
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+};
 
 // Register User (Signup)
 exports.signupUser = async (req, res) => {
   try {
-    const { name, email, password, confirmPassword } = req.body;
+    let { name, email, password, confirmPassword } = req.body;
 
     // Validation
     if (!name || !email || !password || !confirmPassword) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
+
+    if (email) email = email.trim().toLowerCase();
 
     if (password !== confirmPassword) {
       return res.status(400).json({ success: false, message: 'Passwords do not match' });
@@ -30,11 +41,7 @@ exports.signupUser = async (req, res) => {
     await user.save();
 
     // Generate token
-    const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    const token = signAuthToken({ id: user._id, email: user.email, role: user.role });
 
     res.status(201).json({
       success: true,
@@ -55,7 +62,7 @@ exports.signupUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
   try {
     let { email, password } = req.body;
-    if (email) email = email.trim();
+    if (email) email = email.trim().toLowerCase();
 
     // Validation
     if (!email || !password) {
@@ -73,11 +80,7 @@ exports.loginUser = async (req, res) => {
     }
 
     // Generate token
-    const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    const token = signAuthToken({ id: user._id, email: user.email, role: user.role });
 
     res.status(200).json({
       success: true,
@@ -98,7 +101,7 @@ exports.loginUser = async (req, res) => {
 exports.loginAdmin = async (req, res) => {
   try {
     let { email, password } = req.body;
-    if (email) email = email.trim();
+    if (email) email = email.trim().toLowerCase();
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
@@ -130,11 +133,7 @@ exports.loginAdmin = async (req, res) => {
     }
 
     // Generate token for admin
-    const token = jwt.sign(
-      { id: userId, email: email, role: 'admin' },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    );
+    const token = signAuthToken({ id: userId, email: email, role: 'admin' });
 
     res.status(200).json({
       success: true,

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import * as tf from "@tensorflow/tfjs";
 import * as mobilenet from "@tensorflow-models/mobilenet";
 import { detectAIImage, classifyCivicContent } from '../utils/aiImageDetector';
-import { API_BASE_URL } from '../config';
+import { API_URL } from '../config';
 import LanguageSelector from '../components/LanguageSelector';
 
 const AdminLiveDetection = () => {
@@ -428,7 +428,7 @@ const AdminLiveDetection = () => {
         issueData.append('image', blob, `live_detection_${Date.now()}.jpg`);
       }
 
-      const response = await axios.post(`${API_BASE_URL}/api/issues`, issueData, {
+      const response = await axios.post(`${API_URL}/issues`, issueData, {
         headers: {
           Authorization: `Bearer ${adminToken}`,
           'Content-Type': 'multipart/form-data'

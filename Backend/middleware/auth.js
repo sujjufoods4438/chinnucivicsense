@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || process.env.jwt_secret;
 
 exports.protect = (req, res, next) => {
   let token;
@@ -12,7 +13,11 @@ exports.protect = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!JWT_SECRET) {
+      return res.status(500).json({ success: false, message: 'JWT secret is not configured' });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {

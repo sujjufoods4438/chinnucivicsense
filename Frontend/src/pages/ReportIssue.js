@@ -11,7 +11,9 @@ import { VoiceReporter } from '../utils/voiceReporter';
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { API_BASE_URL } from "../config";
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
+import { API_URL } from "../config";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -344,32 +346,29 @@ function ReportIssue() {
 
   const startCamera = async () => {
     setCameraError("");
-
     try {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera 
       });
 
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadeddata = () => {
-          videoRef.current.play();
-        };
+      if (image && image.webPath) {
+        setPreviewSrc(image.webPath);
+        const response = await fetch(image.webPath);
+        const blob = await response.blob();
+        const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        setFormData(prev => ({ ...prev, image: file }));
+        const img = new Image();
+        img.onload = async () => { await validateImageWithAI(img); };
+        img.src = image.webPath;
       }
-
-      setCameraActive(true);
-      setCameraMode(true);
-
     } catch (err) {
       console.error("Camera error:", err);
-      setCameraError("Unable to access camera. Check permissions.");
+      if (err.message !== 'User cancelled photos app') {
+        setCameraError("Unable to access camera.");
+      }
     }
   };
 
@@ -437,16 +436,13 @@ function ReportIssue() {
     setSuccess('You can now enter location manually');
   };
 
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by this browser');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
+  const handleGetLocation = async () => {
+    try {
+      const coordinates = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true
+      });
+      const lat = coordinates.coords.latitude;
+      const lon = coordinates.coords.longitude;
 
         setFormData(prev => ({
           ...prev,
@@ -514,11 +510,11 @@ function ReportIssue() {
 
             setSuccess('Location coordinates obtained (address lookup limited)');
           });
-      },
-      (error) => {
-        setError('Could not get location: ' + error.message);
-      }
-    );
+    } catch (error) {
+      setError('Could not get location: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitReport = async () => {
@@ -565,7 +561,7 @@ function ReportIssue() {
         fd.append('image', formData.image);
       }
 
-      const response = await axios.post(`${API_BASE_URL}/api/issues`, fd, {
+      const response = await axios.post(`${API_URL}/issues`, fd, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config';
+import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL, API_URL } from '../config';
 import '../styles/Auth.css';
 
 function Signup() {
@@ -33,24 +33,45 @@ function Signup() {
       return;
     }
 
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        confirmPassword: formData.confirmPassword
-      });
+    const maxRetries = 3;
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const trimmedEmail = formData.email.trim().toLowerCase();
+        const response = await axios.post(`${API_URL}/auth/signup`, {
+          name: formData.name,
+          email: trimmedEmail,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword
+        });
 
-      if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        navigate('/citizen-dashboard');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed');
-    } finally {
-      setLoading(false);
+        if (response.data.success) {
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('user', JSON.stringify(response.data.user));
+          navigate('/citizen-dashboard');
+          return;
+        }
+      } catch (err) {
+        console.log(`Signup attempt ${attempt} failed:`, err.message);
+        lastError = err;
+        
+        if (attempt === maxRetries) {
+          if (err.response) {
+            setError(err.response.data.message || 'Signup failed');
+          } else if (err.request) {
+            setError(`Backend waking up... Try again in 60s (${API_BASE_URL})`);
+          } else {
+            setError('Connection error: ' + err.message);
+          }
+          break;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      };
     }
+    
+    setLoading(false);
   };
 
   return (
@@ -104,7 +125,7 @@ function Signup() {
           </button>
         </form>
         <p>
-          Already have an account? <a href="/login">Login here</a>
+          Already have an account? <Link to="/login">Login here</Link>
         </p>
       </div>
     </div>

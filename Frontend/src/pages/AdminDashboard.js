@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, API_URL } from '../config';
 import '../styles/Dashboard.css';
 import { io } from 'socket.io-client';
 import * as tf from "@tensorflow/tfjs";
@@ -65,7 +65,7 @@ function AdminDashboard() {
 
   const fetchIssues = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/issues`, {
+      const response = await axios.get(`${API_URL}/issues`, {
         headers: {
           Authorization: `Bearer ${adminToken}`
         }
@@ -81,7 +81,7 @@ function AdminDashboard() {
 
   const fetchStatistics = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/issues/stats/dashboard`, {
+      const response = await axios.get(`${API_URL}/issues/stats/dashboard`, {
         headers: {
           Authorization: `Bearer ${adminToken}`
         }
@@ -109,7 +109,7 @@ function AdminDashboard() {
               userVisibleOnly: true,
               applicationServerKey: urlBase64ToUint8Array('BNFv81Fm-YtTS4CRN9I2SLiDJ1lsM5ALR3qJ4SJCHgP2teBhGq_ds9HJbXoPxlBWfcQzCbTqHHMmXg50rhrWs9M')
             }).then((subscription) => {
-              fetch(`${API_BASE_URL}/api/subscribe`, {
+              fetch(`${API_URL}/subscribe`, {
                 method: 'POST',
                 body: JSON.stringify(subscription),
                 headers: { 'Content-Type': 'application/json' }
@@ -162,7 +162,7 @@ function AdminDashboard() {
   const handleUpdateIssue = async (issueId, updateData) => {
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/api/issues/${issueId}`,
+        `${API_URL}/issues/${issueId}`,
         updateData,
         {
           headers: {
@@ -256,7 +256,7 @@ function AdminDashboard() {
       fd.append('comments', progressComments);
       
       const response = await axios.post(
-        `${API_BASE_URL}/api/issues/${issueId}/progress`,
+        `${API_URL}/issues/${issueId}/progress`,
         fd,
         {
           headers: {
@@ -302,6 +302,9 @@ function AdminDashboard() {
             🔔
             {unreadCount > 0 && <span style={{ position: 'absolute', top: -5, right: -10, background: 'red', color: 'white', borderRadius: '50%', padding: '2px 6px', fontSize: '12px' }}>{unreadCount}</span>}
           </div>
+          <button onClick={() => navigate('/analytics')} style={{ marginRight: '10px', padding: '8px 16px', background: '#a855f7', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
+            📊 Analytics
+          </button>
           <button onClick={() => navigate('/admin-live-detection')} style={{ marginRight: '10px', padding: '8px 16px', background: '#3498db', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
             🎥 Live Detection
           </button>

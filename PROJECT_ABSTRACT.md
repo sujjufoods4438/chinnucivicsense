@@ -17,9 +17,11 @@ AI-powered, bilingual (English/Hindi/Telugu) web platform enabling:
 
 ## Tech Stack
 - **Frontend**: React.js, i18next (multilingual), Netlify deployment
-- **Backend**: Node.js/Express, MongoDB (Mongoose models: User, IssueReport), Multer (uploads)
-- **AI/ML**: Custom image fake detection (`aiImageDetector.js`), Voice processing
-- **Other**: JWT Auth, REST APIs, Service Workers (PWA)
+- **Mobile**: Capacitor (iOS/Android Native Shell), Native GPS/Camera APIs
+- **Backend**: Node.js/Express, MongoDB (Mongoose models: User, IssueReport), Socket.io (Real-time updates)
+- **AI/ML**: Custom image fake detection, MobileNet V2 (Civic content analysis)
+- **Analytics**: Chart.js, React-Leaflet (Heatmaps), PDF Exporting
+- **Other**: JWT Auth, REST APIs, Service Workers (PWA), Local Notifications
 
 ## Key Features, Innovation & Uniqueness
 | Feature | Innovation/Uniqueness |
@@ -27,22 +29,22 @@ AI-powered, bilingual (English/Hindi/Telugu) web platform enabling:
 | AI Image Fake Detection | Real-time verification of uploaded images/videos |
 | Multilingual Voice Reporting | Speech-to-text in 3 languages for illiterate users |
 | Admin Live Detection Dashboard | Real-time monitoring with emergency alerts |
-| Citizen Dashboard | Track reported issue status |
-| PWA Support | Offline-capable mobile experience |
-| **Unique**: Combines AI media trust + regional language support + voice accessibility |
+| **City Snapshot Analytics** | Heatmaps, Line Trends, and Leaderboards for City Officials |
+| **Native Mobile Experience** | iOS/Android app with native hardware (Camera/GPS/Notifications) |
+| PWA & Export Support | Offline access + one-click PDF Executive Reports |
+| **Unique**: All-in-one Civic ecosystem: AI Trust + Native App + Professional Analytics |
 
 ## Expected Outcomes
 - 70% faster emergency response
-- 90% fake report reduction
-- 3x citizen participation
-- Centralized admin analytics
+- 95% automated verification accuracy (via MobileNet)
+- 3x community trust through transparent analytics
+- Unified data management via local/mobile synchronization
 
 ## Future Scope
-- Mobile App (React Native)
+- Predictive "Hotspot" forecasting via AI
 - Video deepfake detection
-- Blockchain logs
+- Blockchain logs for report immutability
 - Govt API integrations
-- Predictive analytics
 
 ## Advantages & Business/Innovation Usage
 **Advantages**:

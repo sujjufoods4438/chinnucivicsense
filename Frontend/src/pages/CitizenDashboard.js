@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL, API_URL } from '../config';
 import { io } from 'socket.io-client';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import '../styles/CitizenDashboard.css';
 import EmergencyAlertSystem from '../components/EmergencyAlertSystem';
 import LanguageSelector from '../components/LanguageSelector';
@@ -49,7 +50,7 @@ function CitizenDashboard() {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/issues/user/my-issues`, {
+      const response = await axios.get(`${API_URL}/issues/user/my-issues`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIssues(response.data.data || []);
@@ -65,6 +66,15 @@ function CitizenDashboard() {
     if (!token) { navigate('/login'); return; }
 
     fetchUserIssues();
+    
+    // Request Native Notification Permissions
+    const requestPermissions = async () => {
+      const status = await LocalNotifications.checkPermissions();
+      if (status.display !== 'granted') {
+        await LocalNotifications.requestPermissions();
+      }
+    };
+    requestPermissions();
 
     const playUserAlert = () => {
       try {
@@ -119,10 +129,27 @@ function CitizenDashboard() {
       playUserAlert();
     });
 
-    socket.on('issue_updated', (updatedIssue) => {
+    socket.on('issue_updated', async (updatedIssue) => {
       const reporterId = updatedIssue.reportedBy?.id || updatedIssue.reportedBy?._id || updatedIssue.reportedBy;
       if (reporterId === user.id) {
         setNotification(`🔔 Complaint update: status changed to ${updatedIssue.status}.`);
+        
+        // Native Mobile Notification
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title: updatedIssue.status === 'resolved' ? '🎉 Issue Resolved!' : '📋 CivicSense Update',
+              body: `Your report about "${updatedIssue.issueType}" has been updated to: ${updatedIssue.status.toUpperCase()}`,
+              id: Math.floor(Math.random() * 1000),
+              schedule: { at: new Date(Date.now() + 1000) },
+              sound: 'beep.wav',
+              attachments: [],
+              actionTypeId: "",
+              extra: null
+            }
+          ]
+        });
+
         if (updatedIssue.status === 'resolved') {
           setNotification('🎉 Your complaint has been resolved. Great news!');
         }
@@ -176,6 +203,9 @@ function CitizenDashboard() {
           </button>
           <button className="cd-nav-item" onClick={() => navigate('/report-issue')}>
             <span>➕</span> {t('dashboard.reportIssue')}
+          </button>
+          <button className="cd-nav-item" onClick={() => navigate('/analytics')}>
+            <span>📊</span> City Analytics
           </button>
         </nav>
 

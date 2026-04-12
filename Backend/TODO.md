@@ -1,7 +1,7 @@
 # MongoDB Connection Fix - Steps to Complete
 
-## [ ] 1. Create .env file
-Copy `Backend/.env.example` to `Backend/.env` and update MONGODB_URI with your Atlas password.
+## [x] 1. Create .env file
+✅ Backend/.env created with all vars (MONGODB_URI, JWT_SECRET, ADMIN creds, etc.).
 
 ## [ ] 2. Atlas Setup (if new cluster)
 - Go to [MongoDB Atlas](https://cloud.mongodb.com)

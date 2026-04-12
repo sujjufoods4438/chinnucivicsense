@@ -7,6 +7,7 @@ import ReportIssue from './pages/ReportIssue';
 import AdminDashboard from './pages/AdminDashboard';
 import CitizenDashboard from './pages/CitizenDashboard';
 import AdminLiveDetection from './pages/AdminLiveDetection';
+import Analytics from './pages/Analytics';
 
 function App() {
   useEffect(() => {
@@ -37,6 +38,7 @@ function App() {
         {/* Admin routes */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/admin-live-detection" element={<AdminLiveDetection />} />
+        <Route path="/analytics" element={<Analytics />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" />} />

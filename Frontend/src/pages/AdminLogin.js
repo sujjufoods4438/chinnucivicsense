@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Auth.css';
-import { API_BASE_URL } from "../config";
-fetch(`${API_BASE_URL}/api/auth/login`)
+import { API_BASE_URL, API_URL } from "../config";
 
 function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -17,22 +16,45 @@ function AdminLogin() {
     setError('');
     setLoading(true);
 
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/admin-login`, {
-        email,
-        password
-      });
+    const maxRetries = 3;
+    let lastError = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const trimmedEmail = email.trim().toLowerCase();
+        const response = await axios.post(`${API_URL}/auth/admin-login`, {
+          email: trimmedEmail,
+          password
+        });
 
-      if (response.data.success) {
-        localStorage.setItem('adminToken', response.data.token);
-        localStorage.setItem('adminUser', JSON.stringify(response.data.user));
-        navigate('/admin-dashboard');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Admin login failed');
-    } finally {
-      setLoading(false);
+        if (response.data.success) {
+          localStorage.setItem('adminToken', response.data.token);
+          localStorage.setItem('adminUser', JSON.stringify(response.data.user));
+          navigate('/admin-dashboard');
+          return;
+        }
+      } catch (err) {
+        console.log(`Admin login attempt ${attempt} failed:`, err.message);
+        lastError = err;
+        
+        if (attempt === maxRetries) {
+          console.error('All admin login attempts failed:', err);
+          if (err.response) {
+            const errorMsg = err.response.data.message || err.response.data.error || 'Admin login failed';
+            setError(errorMsg);
+          } else if (err.request) {
+            setError(`Backend waking up... Try again in 60s (${API_BASE_URL})`);
+          } else {
+            setError('Connection error: ' + err.message);
+          }
+          break;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      };
     }
+    
+    setLoading(false);
   };
 
   return (
@@ -64,7 +86,7 @@ function AdminLogin() {
           </button>
         </form>
         <p>
-          Citizen login? <a href="/login">Click here</a>
+          Citizen login? <Link to="/login">Click here</Link>
         </p>
       </div>
     </div>

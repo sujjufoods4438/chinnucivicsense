@@ -8,7 +8,7 @@ Dedicated real-time camera system exclusively for **Admin/Judge login** to demon
 ## 🚀 How to Access
 
 ### Step 1: Admin Login
-1. Go to **http://localhost:3000/admin-login**
+1. Go to **https://civicsense-frontend.netlify.app/admin-login** (or your hosted URL)
 2. Enter Admin Email & Password
 3. You will be redirected to **Admin Dashboard**
 
@@ -104,7 +104,7 @@ Shows:
 - **Camera**: Navigator.mediaDevices.getUserMedia API
 - **AI Model**: TensorFlow.js + MobileNet v2
 - **Image Validation**: Custom AI-detection algorithm + FaceDetector API
-- **Backend**: Node.js + Express on port 5000
+- **Backend**: Node.js + Express on Render
 - **Database**: MongoDB (isLiveDetection flag marks auto-submissions)
 
 ### Data Sent on Auto-Submit
@@ -154,7 +154,7 @@ Shows:
 - ✔️ Check internet connection
 - ✔️ Verify admin token hasn't expired (log in again)
 - ✔️ Check browser console for specific error message
-- ✔️ Ensure backend is running on port 5000
+- ✔️ Ensure backend is running on Render
 
 ---
 
@@ -191,7 +191,7 @@ Shows:
 ## 📞 Support
 For technical issues:
 - Check browser console (F12) for error messages
-- Ensure backend is running: `http://localhost:5000/api/issues`
+- Ensure backend is running: `https://civicsense-backend-1.onrender.com/api/health`
 - Verify MongoDB connection in backend logs
 - Clear browser cache and try again
 

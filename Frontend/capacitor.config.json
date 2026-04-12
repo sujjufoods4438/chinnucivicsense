@@ -1,0 +1,9 @@
+{
+  "appId": "in.civicsense.ai",
+  "appName": "CivicSense AI",
+  "webDir": "build",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

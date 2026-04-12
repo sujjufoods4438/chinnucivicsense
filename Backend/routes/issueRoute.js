@@ -35,6 +35,7 @@ const { protect, authorize } = require('../middleware/auth');
 // User routes
 router.post('/', protect, upload.single('image'), createIssueReport); // Create issue (accept file field `image`)
 router.get('/user/my-issues', protect, getUserIssues); // Get user's issues
+router.get('/stats/dashboard', protect, authorize('admin'), getStatistics); // Get statistics
 
 // Public routes
 router.get('/:id', getIssueById); // Get issue by ID
@@ -42,7 +43,6 @@ router.get('/:id', getIssueById); // Get issue by ID
 // Admin routes
 router.get('/', protect, authorize('admin'), getAllIssues); // Get all issues
 router.put('/:id', protect, authorize('admin'), updateIssue); // Update issue
-router.get('/stats/dashboard', protect, authorize('admin'), getStatistics); // Get statistics
 router.post('/:id/progress', protect, authorize('admin'), upload.single('image'), addProgressImage); // Add progress image
 
 module.exports = router;
