@@ -1,0 +1,64 @@
+{
+  "name": "civicsense-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "proxy": "https://civicsense-backend-1.onrender.com",
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/camera": "^8.0.2",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/geolocation": "^8.2.0",
+    "@capacitor/ios": "^8.3.0",
+    "@capacitor/local-notifications": "^8.0.2",
+    "@capacitor/preferences": "^8.0.1",
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "^4.22.0",
+    "axios": "^1.3.0",
+    "chart.js": "^4.5.1",
+    "date-fns": "^2.29.1",
+    "html2canvas": "^1.4.1",
+    "i18next": "^26.0.1",
+    "jspdf": "^4.2.1",
+    "leaflet": "^1.9.4",
+    "mapbox-gl": "^2.13.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^18.2.0",
+    "react-i18next": "^17.0.1",
+    "react-leaflet": "^4.2.1",
+    "react-map-gl": "^7.0.16",
+    "react-router-dom": "^6.8.0",
+    "socket.io-client": "^4.8.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "mobile:build": "npm run build && npx cap sync",
+    "mobile:open:android": "npx cap open android",
+    "mobile:open:ios": "npx cap open ios"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "react-scripts": "5.0.1"
+  }
+}

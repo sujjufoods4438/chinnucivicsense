@@ -1,0 +1,40 @@
+npm error code ERESOLVE
+npm error ERESOLVE could not resolve
+npm error
+npm error While resolving: react-scripts@5.0.1
+npm error Found: typescript@6.0.3
+npm error node_modules/typescript
+npm error   peer typescript@">= 2.7" from fork-ts-checker-webpack-plugin@6.5.3
+npm error   node_modules/fork-ts-checker-webpack-plugin
+npm error     fork-ts-checker-webpack-plugin@"^6.5.0" from react-dev-utils@12.0.1
+npm error     node_modules/react-dev-utils
+npm error       react-dev-utils@"^12.0.1" from react-scripts@5.0.1
+npm error       node_modules/react-scripts
+npm error         dev react-scripts@"5.0.1" from the root project
+npm error   peerOptional typescript@"^5 || ^6" from i18next@26.0.8
+npm error   node_modules/i18next
+npm error     i18next@"^26.0.1" from the root project
+npm error     peer i18next@">= 26.0.1" from react-i18next@17.0.6
+npm error     node_modules/react-i18next
+npm error       react-i18next@"^17.0.1" from the root project
+npm error   2 more (react-i18next, tsutils)
+npm error
+npm error Could not resolve dependency:
+npm error peerOptional typescript@"^3.2.1 || ^4" from react-scripts@5.0.1
+npm error node_modules/react-scripts
+npm error   dev react-scripts@"5.0.1" from the root project
+npm error
+npm error Conflicting peer dependency: typescript@4.9.5
+npm error node_modules/typescript
+npm error   peerOptional typescript@"^3.2.1 || ^4" from react-scripts@5.0.1
+npm error   node_modules/react-scripts
+npm error     dev react-scripts@"5.0.1" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error C:\Users\CHINNU\AppData\Local\npm-cache\_logs\2026-04-28T16_58_45_576Z-eresolve-report.txt
+npm error A complete log of this run can be found in: C:\Users\CHINNU\AppData\Local\npm-cache\_logs\2026-04-28T16_58_45_576Z-debug-0.log
