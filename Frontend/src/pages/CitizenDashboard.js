@@ -8,7 +8,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import '../styles/CitizenDashboard.css';
 import EmergencyAlertSystem from '../components/EmergencyAlertSystem';
 import LanguageSelector from '../components/LanguageSelector';
-import BeforeAfterSlider from '../components/BeforeAfterSlider';
+import BeforeAfterSlider from '../components/BeforeAfterSlider.js';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from "leaflet";

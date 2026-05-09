@@ -8,8 +8,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import CitizenDashboard from './pages/CitizenDashboard';
 import AdminLiveDetection from './pages/AdminLiveDetection';
 import Analytics from './pages/Analytics';
-import Leaderboard from './pages/Leaderboard';
-import AIChatbot from './components/AIChatbot';
+import Leaderboard from './pages/Leaderboard.js';
+import AIChatbot from './components/AIChatbot.js';
 
 function App() {
   useEffect(() => {
