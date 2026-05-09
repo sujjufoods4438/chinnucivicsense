@@ -292,7 +292,6 @@ function ReportIssue() {
       if (model) {
         setAiStatusMessage('🏷️ Classifying issue type...');
         const predictions = await model.classify(imageElement);
-        const topLabel = predictions[0]?.className || 'unknown';
         console.log('MobileNet Predictions:', predictions);
 
         const contentResult = await classifyCivicContent(predictions);

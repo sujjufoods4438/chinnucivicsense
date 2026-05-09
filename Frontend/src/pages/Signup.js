@@ -34,7 +34,6 @@ function Signup() {
     }
 
     const maxRetries = 3;
-    let lastError = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -54,8 +53,6 @@ function Signup() {
         }
       } catch (err) {
         console.log(`Signup attempt ${attempt} failed:`, err.message);
-        lastError = err;
-        
         if (attempt === maxRetries) {
           if (err.response) {
             setError(err.response.data.message || 'Signup failed');

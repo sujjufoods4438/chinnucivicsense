@@ -17,8 +17,6 @@ function AdminLogin() {
     setLoading(true);
 
     const maxRetries = 3;
-    let lastError = null;
-    
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const trimmedEmail = email.trim().toLowerCase();
@@ -35,8 +33,6 @@ function AdminLogin() {
         }
       } catch (err) {
         console.log(`Admin login attempt ${attempt} failed:`, err.message);
-        lastError = err;
-        
         if (attempt === maxRetries) {
           console.error('All admin login attempts failed:', err);
           if (err.response) {

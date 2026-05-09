@@ -17,7 +17,6 @@ function Login() {
     setLoading(true);
 
     const maxRetries = 3;
-    let lastError = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -35,8 +34,6 @@ function Login() {
         }
       } catch (err) {
         console.log(`Login attempt ${attempt} failed:`, err.message);
-        lastError = err;
-        
         if (attempt === maxRetries) {
           console.error('All login attempts failed:', err);
           if (err.response) {
