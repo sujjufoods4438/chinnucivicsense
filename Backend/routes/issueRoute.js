@@ -28,7 +28,8 @@ const {
   getIssueById,
   updateIssue,
   getStatistics,
-  addProgressImage
+  addProgressImage,
+  upvoteIssue
 } = require('../controllers/issueController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -39,6 +40,7 @@ router.get('/stats/dashboard', protect, authorize('admin'), getStatistics); // G
 
 // Public routes
 router.get('/:id', getIssueById); // Get issue by ID
+router.post('/:id/upvote', protect, upvoteIssue); // Upvote issue
 
 // Admin routes
 router.get('/', protect, authorize('admin'), getAllIssues); // Get all issues

@@ -419,8 +419,14 @@ const AdminLiveDetection = () => {
       issueData.append('description', `🚨 LIVE ADMIN DETECTION\n\n📊 AI Classification: ${detectedIssue.label}\n🔍 Real Score: ${detectedIssue.realScore}%\n🏛️ Civic Score: ${detectedIssue.civicScore}%\n⏰ Detected: ${detectedIssue.timestamp}\n\nAuto-detected by admin live camera system.`);
       issueData.append('latitude', lat);
       issueData.append('longitude', lon);
+      
+      // Ensure missing location fields are populated
+      locData.state = locData.state || 'Unknown State';
+      locData.district = locData.district || 'Unknown District';
+      
       issueData.append('location', JSON.stringify(locData));
       issueData.append('isLiveDetection', 'true');
+      issueData.append('isAdminReport', 'true'); // Flag to let backend know an admin reported this
 
       if (lastCapture) {
         const response = await fetch(lastCapture);

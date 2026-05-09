@@ -8,6 +8,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import '../styles/CitizenDashboard.css';
 import EmergencyAlertSystem from '../components/EmergencyAlertSystem';
 import LanguageSelector from '../components/LanguageSelector';
+import BeforeAfterSlider from '../components/BeforeAfterSlider';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from "leaflet";
@@ -48,6 +49,7 @@ function CitizenDashboard() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(true);
   const [filter, setFilter]     = useState('all');
+  const [activeTab, setActiveTab] = useState('mine'); // 'mine' or 'community'
   const [expanded, setExpanded] = useState(null);
   const [notification, setNotification] = useState('');
   const [ringtone, setRingtone] = useState(localStorage.getItem('ringtone') || 'triangle');
@@ -61,17 +63,31 @@ function CitizenDashboard() {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get(`${API_URL}/issues/user/my-issues`, {
+      const endpoint = activeTab === 'mine' ? '/issues/user/my-issues' : '/issues';
+      const response = await axios.get(`${API_URL}${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIssues(response.data.data || []);
     } catch (err) {
-      setError('Failed to fetch your complaints. Please try again.');
+      setError('Failed to fetch complaints. Please try again.');
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, activeTab]);
+
+  const handleUpvote = async (issueId) => {
+    try {
+      const response = await axios.post(`${API_URL}/issues/${issueId}/upvote`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setIssues(prev => prev.map(i => i._id === issueId ? response.data.data : i));
+      }
+    } catch (err) {
+      console.error('Upvote failed', err);
+    }
+  };
 
   useEffect(() => {
     if (!token) { navigate('/login'); return; }
@@ -215,6 +231,9 @@ function CitizenDashboard() {
           <button className="cd-nav-item" onClick={() => navigate('/report-issue')}>
             <span>➕</span> {t('dashboard.reportIssue')}
           </button>
+          <button className="cd-nav-item" onClick={() => navigate('/leaderboard')}>
+            <span>🏆</span> Leaderboard
+          </button>
           <button className="cd-nav-item" onClick={() => navigate('/analytics')}>
             <span>📊</span> City Analytics
           </button>
@@ -324,6 +343,22 @@ function CitizenDashboard() {
           </div>
         </div>
 
+        {/* Tab Switcher */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          <button 
+            onClick={() => setActiveTab('mine')}
+            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: activeTab === 'mine' ? '#3b82f6' : '#e2e8f0', color: activeTab === 'mine' ? '#fff' : '#475569', fontWeight: 600, cursor: 'pointer' }}
+          >
+            👤 My Reports
+          </button>
+          <button 
+            onClick={() => setActiveTab('community')}
+            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: activeTab === 'community' ? '#3b82f6' : '#e2e8f0', color: activeTab === 'community' ? '#fff' : '#475569', fontWeight: 600, cursor: 'pointer' }}
+          >
+            🌍 Community Feed
+          </button>
+        </div>
+
         {/* Stats Row */}
         <div className="cd-stats">
           <div className="cd-stat-card cd-stat-total">
@@ -420,6 +455,14 @@ function CitizenDashboard() {
                       <span className="cd-priority-badge" style={{ color: priority.color, background: priority.bg }}>
                         {priority.label}
                       </span>
+                      {activeTab === 'community' && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleUpvote(issue._id); }}
+                          style={{ marginLeft: '10px', background: issue.upvotedBy?.includes(user.id) ? '#dbeafe' : 'transparent', border: '1px solid #3b82f6', color: '#3b82f6', borderRadius: '15px', padding: '2px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          👍 {issue.votes || 0}
+                        </button>
+                      )}
                       <span className="cd-card-chevron">{isOpen ? '▲' : '▼'}</span>
                     </div>
                   </div>
@@ -500,9 +543,21 @@ function CitizenDashboard() {
                           </div>
                         )}
 
-                        {/* Progress Images Timeline */}
+                        {/* Progress Images Timeline & Slider */}
                         {issue.progressImages && issue.progressImages.length > 0 && (
                           <div style={{ marginTop: '16px', borderTop: '2px solid #e5e7eb', paddingTop: '14px' }}>
+                            {issue.status === 'resolved' && issue.image && issue.progressImages[issue.progressImages.length-1].image && (
+                               <div style={{ marginBottom: '20px' }}>
+                                  <span className="cd-detail-label" style={{ display: 'block', marginBottom: '10px' }}>
+                                    ✨ Before & After Comparison
+                                  </span>
+                                  <BeforeAfterSlider 
+                                    beforeImage={imgSrc} 
+                                    afterImage={issue.progressImages[issue.progressImages.length-1].image} 
+                                  />
+                               </div>
+                            )}
+
                             <span className="cd-detail-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
                               📸 {t('dashboard.progressImages')}
                             </span>

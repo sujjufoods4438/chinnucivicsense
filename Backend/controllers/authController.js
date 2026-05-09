@@ -144,6 +144,7 @@ exports.loginAdmin = async (req, res) => {
         email: email,
         role: 'admin'
       }
+
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -157,6 +158,23 @@ exports.getCurrentUser = async (req, res) => {
     res.status(200).json({
       success: true,
       user
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get leaderboard
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const topUsers = await User.find({ role: 'citizen' })
+      .select('name points badges')
+      .sort({ points: -1 })
+      .limit(10);
+      
+    res.status(200).json({
+      success: true,
+      data: topUsers
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

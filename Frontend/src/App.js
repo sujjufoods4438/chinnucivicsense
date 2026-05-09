@@ -8,6 +8,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import CitizenDashboard from './pages/CitizenDashboard';
 import AdminLiveDetection from './pages/AdminLiveDetection';
 import Analytics from './pages/Analytics';
+import Leaderboard from './pages/Leaderboard';
+import AIChatbot from './components/AIChatbot';
 
 function App() {
   useEffect(() => {
@@ -34,6 +36,7 @@ function App() {
         {/* Citizen routes */}
         <Route path="/report-issue" element={<ReportIssue />} />
         <Route path="/citizen-dashboard" element={<CitizenDashboard />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
 
         {/* Admin routes */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
@@ -43,6 +46,7 @@ function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+      <AIChatbot />
     </Router>
   );
 }

@@ -8,6 +8,7 @@ import * as tf from "@tensorflow/tfjs";
 import * as mobilenet from "@tensorflow-models/mobilenet";
 import { detectAIImage, classifyCivicContent } from '../utils/aiImageDetector';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { HeatmapLayer } from 'react-leaflet-heatmap-layer-v3';
 import 'leaflet/dist/leaflet.css';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
@@ -447,6 +448,17 @@ function AdminDashboard() {
         </div>
         <div style={{ height: '400px', width: '100%', marginBottom: '30px', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
           <MapContainer center={[16.506174, 80.648015]} zoom={12} style={{ height: '100%', width: '100%' }}>
+            <HeatmapLayer
+              fitBoundsOnLoad
+              fitBoundsOnUpdate
+              points={issues.filter(i => i.location && i.location.latitude && i.location.longitude)}
+              longitudeExtractor={m => m.location.longitude}
+              latitudeExtractor={m => m.location.latitude}
+              intensityExtractor={m => parseFloat(m.priority === 'critical' ? 1.0 : m.priority === 'high' ? 0.8 : m.priority === 'medium' ? 0.5 : 0.2)}
+              radius={25}
+              blur={15}
+              max={1.0}
+            />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

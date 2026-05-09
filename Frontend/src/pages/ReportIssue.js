@@ -7,6 +7,8 @@ import * as tf from "@tensorflow/tfjs";
 import * as mobilenet from "@tensorflow-models/mobilenet";
 import { detectAIImage, classifyCivicContent } from '../utils/aiImageDetector';
 import { VoiceReporter } from '../utils/voiceReporter';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -236,6 +238,54 @@ function ReportIssue() {
         setAiDetecting(false);
         setAiStatusMessage('🤖 AI-Generated image rejected');
         return false;
+      }
+
+      // ✅ PERFECT ANALYSIS with Gemini
+      try {
+        const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
+        if (apiKey && apiKey !== 'YOUR_API_KEY') {
+          setAiStatusMessage('✨ Getting perfect analysis from AI...');
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          
+          const base64Data = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(fileToUse);
+          });
+          
+          const prompt = `You are an expert civic issue analyst. Analyze this image and identify if there is a civic issue (like pothole, garbage, water leak, damaged road, streetlight out, etc). Return a JSON object exactly like this with no markdown:
+{"isCivic": true, "issueType": "one of [garbage, pothole, road_crack, streetlight, water_leak, open_drain, damaged_road, other]", "title": "A short, descriptive title", "description": "A perfect, detailed analysis and description of the issue shown in the image"}`;
+          
+          const imageParts = [{ inlineData: { data: base64Data, mimeType: fileToUse.type } }];
+          const result = await geminiModel.generateContent([prompt, ...imageParts]);
+          const text = result.response.text();
+          const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+          const geminiAnalysis = JSON.parse(jsonStr);
+          
+          if (geminiAnalysis && geminiAnalysis.isCivic) {
+            setCivicConfidence(99);
+            setCivicMatched(true);
+            setFormData(prev => ({
+              ...prev,
+              issueType: geminiAnalysis.issueType,
+              title: geminiAnalysis.title,
+              description: geminiAnalysis.description
+            }));
+            setAiStatusMessage('✅ Perfect AI analysis complete!');
+            setAiResult({
+              type: 'real',
+              confidence: detection.confidence,
+              reason: detection.reason,
+              scores: detection.scores,
+              googleCheck: detection.googleCheck
+            });
+            setAiDetecting(false);
+            return true;
+          }
+        }
+      } catch (geminiErr) {
+        console.warn('Gemini analysis failed or no API key, falling back to MobileNet', geminiErr);
       }
 
       // ✅ MobileNet classification
@@ -883,6 +933,14 @@ function ReportIssue() {
                     📍 {formData.location.area}{formData.location.city ? `, ${formData.location.city}` : ''}{formData.location.district ? `, ${formData.location.district}` : ''}
                   </div>
                 )}
+
+                {/* EXACT HOUSE GEOTAG MAP */}
+                <div style={{ height: '250px', width: '100%', marginTop: '15px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #c7d2fe' }}>
+                  <MapContainer center={[formData.latitude, formData.longitude]} zoom={18} style={{ height: '100%', width: '100%' }}>
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker position={[formData.latitude, formData.longitude]} />
+                  </MapContainer>
+                </div>
               </div>
             )}
 

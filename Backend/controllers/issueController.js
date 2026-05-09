@@ -70,8 +70,16 @@ exports.createIssueReport = async (req, res) => {
       }
     }
 
+    let reportedBy = req.user ? req.user.id : null;
+    if (req.body.isAdminReport && !reportedBy) {
+      // If admin report but req.user.id is missing (e.g. using a different token structure)
+      // Find the first admin user or handle it
+      const adminUser = await require('../models/User').findOne({ role: 'admin' });
+      if (adminUser) reportedBy = adminUser._id;
+    }
+
     const issueReport = new IssueReport({
-      reportedBy: req.user.id,
+      reportedBy: reportedBy,
       issueType,
       priority: autoPriority,
       description,
@@ -82,6 +90,24 @@ exports.createIssueReport = async (req, res) => {
 
     await issueReport.save();
 
+    // GAMIFICATION: Award points for reporting an issue
+    if (reportedBy) {
+      const User = require('../models/User');
+      const user = await User.findById(reportedBy);
+      if (user) {
+        user.points += 10;
+        
+        // Basic Badge Logic
+        if (user.points >= 50 && !user.badges.includes('Civic Hero')) {
+          user.badges.push('Civic Hero');
+        } else if (user.points >= 200 && !user.badges.includes('Eco Warrior')) {
+          user.badges.push('Eco Warrior');
+        }
+        
+        await user.save();
+      }
+    }
+
     if (req.io) {
       req.io.emit('new_issue', issueReport);
     }
@@ -90,7 +116,7 @@ exports.createIssueReport = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Issue reported successfully',
+      message: 'Issue reported successfully (+10 Points!)',
       data: issueReport
     });
   } catch (error) {
@@ -278,6 +304,45 @@ exports.getStatistics = async (req, res) => {
         issuesByType,
         issuesByLocation
       }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Upvote an Issue
+exports.upvoteIssue = async (req, res) => {
+  try {
+    const issue = await IssueReport.findById(req.params.id);
+    if (!issue) {
+      return res.status(404).json({ success: false, message: 'Issue not found' });
+    }
+
+    const userId = req.user.id;
+
+    // Check if user already upvoted
+    const hasUpvoted = issue.upvotedBy.includes(userId);
+
+    if (hasUpvoted) {
+      // Remove upvote
+      issue.upvotedBy = issue.upvotedBy.filter(id => id.toString() !== userId.toString());
+      issue.votes -= 1;
+    } else {
+      // Add upvote
+      issue.upvotedBy.push(userId);
+      issue.votes += 1;
+    }
+
+    await issue.save();
+
+    if (req.io) {
+      req.io.emit('issue_updated', issue);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: hasUpvoted ? 'Upvote removed' : 'Upvote added',
+      data: issue
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
