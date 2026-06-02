@@ -446,8 +446,7 @@ Create a `.env` file inside the Backend directory.
 ```env
 MONGO_URI=your_mongodb_atlas_connection_string
 JWT_SECRET=your_jwt_secret_key
-PORT=5000
-```
+
 
 ---
 
